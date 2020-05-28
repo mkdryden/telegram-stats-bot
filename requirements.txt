@@ -1,0 +1,6 @@
+python-telegram-bot
+SQLAlchemy~=1.3.17
+appdirs~=1.4.4
+pandas~=1.0.3
+seaborn~=0.10.1
+matplotlib~=3.2.1
