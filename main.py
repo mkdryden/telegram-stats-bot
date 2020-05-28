@@ -100,7 +100,7 @@ def print_stats(update: Update, context: CallbackContext):
             context.bot.send_message(chat_id=update.effective_user.id,
                                      text=f"```\n{text}\n```",
                                      parse_mode=telegram.ParseMode.MARKDOWN_V2)
-        except BadRequest:
+        except telegram.error.Unauthorized:  # If user has never chatted with bot
             context.bot.send_message(chat_id=update.effective_chat.id,
                                      text=f"```\n{text}\n```",
                                      parse_mode=telegram.ParseMode.MARKDOWN_V2)
@@ -126,7 +126,7 @@ def print_stats(update: Update, context: CallbackContext):
                 context.bot.send_message(chat_id=update.effective_user.id,
                                          text=f"```\n{text}\n```",
                                          parse_mode=telegram.ParseMode.MARKDOWN_V2)
-            except BadRequest:
+            except telegram.error.Unauthorized:
                 context.bot.send_message(chat_id=update.effective_chat.id,
                                          text=f"```\n{text}\n```",
                                          parse_mode=telegram.ParseMode.MARKDOWN_V2)
