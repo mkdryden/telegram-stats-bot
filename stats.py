@@ -207,7 +207,7 @@ class StatsRunner(object):
 
         bio = BytesIO()
         bio.name = 'plot.png'
-        fig.savefig(bio)
+        fig.savefig(bio, bbox_inches='tight')
         bio.seek(0)
 
         return None, bio
@@ -218,6 +218,7 @@ class StatsRunner(object):
         Get plot of messages for days of the week
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param plot: Type of plot. ('box' or 'violin')
         """
         query_conditions = []
 
@@ -276,7 +277,7 @@ class StatsRunner(object):
 
         bio = BytesIO()
         bio.name = 'plot.png'
-        subplot.get_figure().savefig(bio)
+        fig.savefig(bio, bbox_inches='tight')
         bio.seek(0)
 
         return None, bio
