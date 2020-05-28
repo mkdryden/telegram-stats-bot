@@ -41,6 +41,7 @@ class StatsRunner(object):
     allowed_methods = {'counts': "get_chat_counts",
                        'hours': "get_counts_by_hour",
                        'days': "get_counts_by_day",
+                       'week': "get_week_by_hourday",
                        'history': "get_message_history"}
 
     def __init__(self, engine: Engine, tz: str = 'America/Toronto'):
@@ -276,6 +277,80 @@ class StatsRunner(object):
         bio = BytesIO()
         bio.name = 'plot.png'
         subplot.get_figure().savefig(bio)
+        bio.seek(0)
+
+        return None, bio
+
+    def get_week_by_hourday(self, user: Tuple[int, str] = None, start: str = None, end: str = None)\
+            -> Tuple[None, BytesIO]:
+        """
+        Get plot of messages over the week by day and hour.
+        :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        """
+        query_conditions = []
+
+        if start:
+            start_dt = pd.to_datetime(start)
+            query_conditions.append(f"date >= '{start_dt}'")
+
+        if end:
+            end_dt = pd.to_datetime(end)
+            query_conditions.append(f"date < '{end_dt}'")
+
+        if user:
+            query_conditions.append(f"from_user = {user[0]}")
+
+        query_where = ""
+        if query_conditions:
+            query_where = f"WHERE {' AND '.join(query_conditions)}"
+
+        query = f"""
+                 SELECT date_trunc('hour', date)
+                     as msg_time, count(*) as messages
+                 FROM messages_utc
+                 {query_where}
+                 GROUP BY msg_time
+                 ORDER BY msg_time
+                 """
+        with self.engine.connect() as con:
+            df = pd.read_sql_query(query, con)
+
+        df['msg_time'] = pd.to_datetime(df.msg_time)
+        df['msg_time'] = df.msg_time.dt.tz_convert('America/Toronto')
+        df = df.set_index('msg_time')
+        df = df.asfreq('h', fill_value=0)  # Fill periods with no messages
+        df['dow'] = df.index.weekday
+        df['hour'] = df.index.hour
+        df['day_name'] = df.index.day_name()
+        df_grouped = df[['messages', 'hour', 'day_name']].groupby(['hour', 'day_name']).sum().unstack()
+        df_grouped = df_grouped.loc[:, 'messages']
+        df_grouped = df_grouped[['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                                 'Friday', 'Saturday', 'Sunday']]
+
+        fig = Figure(constrained_layout=True)
+        ax = fig.subplots()
+
+        # Number labels are too big if more than 3 digits
+        if df_grouped.max().max() > 999:
+            annot = False
+        else:
+            annot = True
+
+        sns.heatmap(df_grouped.T, yticklabels=['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'], linewidths=.5,
+                    square=True, annot=annot, fmt='d', annot_kws={'size': 8},
+                    cbar_kws={"orientation": "horizontal"}, cmap="viridis", ax=ax)
+        ax.tick_params(axis='y', rotation=0)
+        ax.set_ylabel("")
+        ax.set_xlabel("")
+        if user:
+            ax.set_title(f"Total messages by day and hour for {user[1]}")
+        else:
+            ax.set_title("Total messages by day and hour")
+
+        bio = BytesIO()
+        bio.name = 'plot.png'
+        fig.savefig(bio, bbox_inches='tight')
         bio.seek(0)
 
         return None, bio
