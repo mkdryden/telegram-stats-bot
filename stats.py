@@ -332,14 +332,8 @@ class StatsRunner(object):
         fig = Figure(constrained_layout=True)
         ax = fig.subplots()
 
-        # Number labels are too big if more than 3 digits
-        if df_grouped.max().max() > 999:
-            annot = False
-        else:
-            annot = True
-
         sns.heatmap(df_grouped.T, yticklabels=['M', 'T', 'W', 'Th', 'F', 'Sa', 'Su'], linewidths=.5,
-                    square=True, annot=annot, fmt='d', annot_kws={'size': 8},
+                    square=True, fmt='d',
                     cbar_kws={"orientation": "horizontal"}, cmap="viridis", ax=ax)
         ax.tick_params(axis='y', rotation=0)
         ax.set_ylabel("")
