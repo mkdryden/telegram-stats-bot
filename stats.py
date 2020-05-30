@@ -44,7 +44,8 @@ class StatsRunner(object):
                        'hours': "get_counts_by_hour",
                        'days': "get_counts_by_day",
                        'week': "get_week_by_hourday",
-                       'history': "get_message_history"}
+                       'history': "get_message_history",
+                       'corr': "get_user_correlation"}
 
     def __init__(self, engine: Engine, tz: str = 'America/Toronto'):
         self.engine = engine
@@ -426,6 +427,109 @@ class StatsRunner(object):
         bio.seek(0)
 
         return None, bio
+
+    def get_user_correlation(self, start: str = None, end: str = None, agg: bool = True, c_type: str = None,
+                             n: int = 5, thresh: float = 0.05, autouser=None, **kwargs) -> Tuple[str, None]:
+        """
+        Return correlations between you and other users.
+        :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param agg: If True, calculate correlation over messages aggregated by hours of the week
+        :param c_type: Correlation type to use. Either 'pearson' or 'spearman'
+        :param n: Show n highest and lowest correlation scores
+        :param thresh: Fraction of time bins that have data for both users to be considered valid (0-1)
+        """
+        user: Tuple[int, str] = kwargs['user']
+        query_conditions = []
+        sql_dict = {}
+
+        if start:
+            sql_dict['start_dt'] = pd.to_datetime(start)
+            query_conditions.append("date >= %(start_dt)s")
+
+        if end:
+            sql_dict['end_dt'] = pd.to_datetime(end)
+            query_conditions.append("date < %(end_dt)s")
+
+        query_where = ""
+        if query_conditions:
+            query_where = f"WHERE {' AND '.join(query_conditions)}"
+
+        if n <= 0:
+            raise HelpException(f'n must be greater than 0, got: {n}')
+
+        if not c_type:
+            c_type = 'pearson'
+        elif c_type not in ['pearson', 'spearman']:
+            raise HelpException("corr must be either pearson or spearman")
+
+        if not 0 <= thresh <= 1:
+            raise HelpException(f'n must be greater than 0, got: {n}')
+
+        query = f"""
+                SELECT msg_time, extract(ISODOW FROM msg_time) as dow, extract(HOUR FROM msg_time) as hour,
+                       "user", messages
+                FROM (
+                         SELECT date_trunc('hour', date)
+                                         as msg_time,
+                                count(*) as messages, from_user as "user"
+                         FROM messages_utc
+                         {query_where}
+                         GROUP BY msg_time, from_user
+                         ORDER BY msg_time
+                     ) t
+                ORDER BY dow, hour;
+                """
+
+        with self.engine.connect() as con:
+            df = pd.read_sql_query(query, con, params=sql_dict)
+        df['msg_time'] = pd.to_datetime(df.msg_time)
+        df['msg_time'] = df.msg_time.dt.tz_convert(self.tz)
+
+        # Prune irrelevant messages (not sure if this actually improves performance)
+        user_first_date = df.loc[df.user == user[0], 'msg_time'].iloc[0]
+        df = df.loc[df.msg_time >= user_first_date]
+
+        df = df.set_index('msg_time')
+
+        user_dict = {'user': {user_id: value[0] for user_id, value in self.users.items()}}
+        df = df.loc[df.user.isin(list(user_dict['user'].keys()))]  # Filter out users with no names
+        df = df.replace(user_dict)  # Replace user ids with names
+        df['user'] = df['user'].str.replace(r'[^\x00-\x7F]', "", regex=True)
+
+        if agg:
+            df = df.pivot_table(index=['dow', 'hour'], columns='user', values='messages', aggfunc='sum')
+            corrs = []
+            for other_user in df.columns.values:
+                if df[user[1]].sum() / df[other_user].sum() > thresh:
+                    me_notna = df[user[1]].notna()
+                    other_notna = df[other_user].notna()
+                    idx = me_notna | other_notna
+                    corrs.append(df.loc[idx, user[1]].fillna(0).corr(df.loc[idx, other_user].fillna(0)))
+                else:
+                    corrs.append(pd.NA)
+
+            me = pd.Series(corrs, index=df.columns.values).sort_values(ascending=False).iloc[1:].dropna()
+        else:
+            df = df.pivot(columns='user', values='messages')
+
+            if thresh == 0:
+                df_corr = df.corr(method=c_type)
+            else:
+                df_corr = df.corr(method=c_type, min_periods=int(thresh*len(df)))
+            me = df_corr[user[1]].sort_values(ascending=False).iloc[1:].dropna()
+
+        if len(me) < 1:
+            return "`Sorry, not enough data, try with -aggtimes, decrease -thresh, or use a bigger date range.`", None
+
+        if n > len(me)//2:
+            n = int(len(me)//2)
+
+        text = me.to_string(header=False, float_format=lambda x: f"{x:.3f}")
+        split = text.splitlines()
+        text = "\n".join(['HIGHEST CORRELATION:'] + split[:n] + ['\nLOWEST CORRELATION:'] + split[-n:])
+
+        return f"**User Correlations for {escape_markdown(user[1])}**\n```\n{text}\n```", None
 
 
 def get_parser(runner: StatsRunner) -> InternalParser:
