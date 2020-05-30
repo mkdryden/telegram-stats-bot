@@ -456,12 +456,17 @@ def get_parser(runner: StatsRunner) -> InternalParser:
             elif arg.name == 'kwargs':
                 pass
             else:
+                arg_doc = None
                 if doc:
-                    arg_doc = None
                     for line in doc:
                         match = re.match(rf"^:param {arg.name}: (.*)", line)
                         if match:
                             arg_doc = match.group(1)
-                subparser.add_argument(f"-{arg.name}", type=arg.annotation, help=arg_doc)
+
+                if arg.annotation == bool:
+                    subparser.add_argument(f"-{arg.name}".replace('_', '-'), action='store_true', help=arg_doc)
+                else:
+                    subparser.add_argument(f"-{arg.name}".replace('_', '-'), type=arg.annotation, help=arg_doc,
+                                           default=arg.default)
 
     return parser
