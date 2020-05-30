@@ -96,17 +96,12 @@ def print_stats(update: Update, context: CallbackContext):
         ns = stats_parser.parse_args(shlex.split(" ".join(context.args)))
     except HelpException as e:
         text = e.msg
-        try:
-            context.bot.send_message(chat_id=update.effective_user.id,
-                                     text=f"```\n{text}\n```",
-                                     parse_mode=telegram.ParseMode.MARKDOWN_V2)
-        except telegram.error.Unauthorized:  # If user has never chatted with bot
-            context.bot.send_message(chat_id=update.effective_chat.id,
-                                     text=f"```\n{text}\n```",
-                                     parse_mode=telegram.ParseMode.MARKDOWN_V2)
+        send_help(text, context, update)
         return
     except argparse.ArgumentError as e:
         text = str(e)
+        send_help(text, context, update)
+        return
     else:
         args = vars(ns)
         func = args.pop('func')
@@ -122,22 +117,26 @@ def print_stats(update: Update, context: CallbackContext):
             text, image = func(**args)
         except HelpException as e:
             text = e.msg
-            try:
-                context.bot.send_message(chat_id=update.effective_user.id,
-                                         text=f"```\n{text}\n```",
-                                         parse_mode=telegram.ParseMode.MARKDOWN_V2)
-            except telegram.error.Unauthorized:
-                context.bot.send_message(chat_id=update.effective_chat.id,
-                                         text=f"```\n{text}\n```",
-                                         parse_mode=telegram.ParseMode.MARKDOWN_V2)
+            send_help(text, context, update)
             return
 
     if text:
         context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text=f"```\n{text}\n```",
+                                 text=text,
                                  parse_mode=telegram.ParseMode.MARKDOWN_V2)
     if image:
         context.bot.send_photo(chat_id=update.effective_chat.id, photo=image)
+
+
+def send_help(text, context, update):
+    try:
+        context.bot.send_message(chat_id=update.effective_user.id,
+                                 text=f"```\n{text}\n```",
+                                 parse_mode=telegram.ParseMode.MARKDOWN_V2)
+    except telegram.error.Unauthorized:  # If user has never chatted with bot
+        context.bot.send_message(chat_id=update.effective_chat.id,
+                                 text=f"```\n{text}\n```",
+                                 parse_mode=telegram.ParseMode.MARKDOWN_V2)
 
 
 if __name__ == '__main__':
