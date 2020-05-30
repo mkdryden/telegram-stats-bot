@@ -110,7 +110,7 @@ class StatsRunner(object):
         query_conditions = []
 
         if n <= 0:
-                raise HelpException(f'n must be greater than 0, got: {n}')
+            raise HelpException(f'n must be greater than 0, got: {n}')
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -140,13 +140,13 @@ class StatsRunner(object):
         df['Percent'] = df['count'] / df['count'].sum() * 100
         df = df[['user', 'count', 'Percent']]
         df.columns = ['User', 'Total Messages', 'Percent']
-        df['User'] = df['User'].str.replace(r'[^\x00-\x7F]', "", regex=True)
+        df['User'] = df['User'].str.replace(r'[^\x00-\x7F]', "", regex=True)  # Drop emoji
 
         text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
         return f"```\n{text}\n```", None
 
-    def get_counts_by_hour(self, user: Tuple[int, str] = None, start: str = None, end: str = None)\
+    def get_counts_by_hour(self, user: Tuple[int, str] = None, start: str = None, end: str = None) \
             -> Tuple[None, BytesIO]:
         """
         Get plot of messages for hours of the day
@@ -222,7 +222,7 @@ class StatsRunner(object):
 
         return None, bio
 
-    def get_counts_by_day(self, user: Tuple[int, str] = None, start: str = None, end: str = None, plot: str = None)\
+    def get_counts_by_day(self, user: Tuple[int, str] = None, start: str = None, end: str = None, plot: str = None) \
             -> Tuple[None, BytesIO]:
         """
         Get plot of messages for days of the week
@@ -294,7 +294,7 @@ class StatsRunner(object):
 
         return None, bio
 
-    def get_week_by_hourday(self, user: Tuple[int, str] = None, start: str = None, end: str = None)\
+    def get_week_by_hourday(self, user: Tuple[int, str] = None, start: str = None, end: str = None) \
             -> Tuple[None, BytesIO]:
         """
         Get plot of messages over the week by day and hour.
@@ -364,7 +364,8 @@ class StatsRunner(object):
 
         return None, bio
 
-    def get_message_history(self, user: Tuple[int, str] = None, averages: int = None, start: str = None, end: str = None)\
+    def get_message_history(self, user: Tuple[int, str] = None, averages: int = None, start: str = None,
+                            end: str = None) \
             -> Tuple[None, BytesIO]:
         """
         Make a plot of message history over time
@@ -466,7 +467,7 @@ class StatsRunner(object):
             raise HelpException("corr must be either pearson or spearman")
 
         if not 0 <= thresh <= 1:
-            raise HelpException(f'n must be greater than 0, got: {n}')
+            raise HelpException(f'n must be in the range [0, 1], got: {n}')
 
         query = f"""
                 SELECT msg_time, extract(ISODOW FROM msg_time) as dow, extract(HOUR FROM msg_time) as hour,
@@ -518,14 +519,14 @@ class StatsRunner(object):
             if thresh == 0:
                 df_corr = df.corr(method=c_type)
             else:
-                df_corr = df.corr(method=c_type, min_periods=int(thresh*len(df)))
+                df_corr = df.corr(method=c_type, min_periods=int(thresh * len(df)))
             me = df_corr[user[1]].sort_values(ascending=False).iloc[1:].dropna()
 
         if len(me) < 1:
             return "`Sorry, not enough data, try with -aggtimes, decrease -thresh, or use a bigger date range.`", None
 
-        if n > len(me)//2:
-            n = int(len(me)//2)
+        if n > len(me) // 2:
+            n = int(len(me) // 2)
 
         text = me.to_string(header=False, float_format=lambda x: f"{x:.3f}")
         split = text.splitlines()
