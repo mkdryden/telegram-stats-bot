@@ -139,7 +139,9 @@ class StatsRunner(object):
         df.columns = ['User', 'Total Messages', 'Percent']
         df['User'] = df['User'].str.replace(r'[^\x00-\x7F]', "", regex=True)
 
-        return df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}"), None
+        text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
+
+        return f"```\n{text}\n```", None
 
     def get_counts_by_hour(self, user: Tuple[int, str] = None, start: str = None, end: str = None)\
             -> Tuple[None, BytesIO]:
