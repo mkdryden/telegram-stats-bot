@@ -11,6 +11,8 @@ import seaborn as sns
 from matplotlib.figure import Figure
 from sqlalchemy.engine import Engine
 
+from utils import escape_markdown
+
 sns.set_context('paper')
 sns.set_style('whitegrid')
 sns.set_palette("Set2")
@@ -92,7 +94,7 @@ class StatsRunner(object):
             with self.engine.connect() as con:
                 con.execute(query, sql_dict)
 
-    def get_chat_counts(self, n: int = None, start: str = None, end: str = None) -> Tuple[str, None]:
+    def get_chat_counts(self, n: int = 20, start: str = None, end: str = None) -> Tuple[str, None]:
         """
         Get top chat users
         :param n: Number of users to show
@@ -104,11 +106,8 @@ class StatsRunner(object):
         sql_dict = {}
         query_conditions = []
 
-        if n is not None:
-            if n <= 0:
+        if n <= 0:
                 raise HelpException(f'n must be greater than 0, got: {n}')
-        else:
-            n = 20
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
