@@ -107,7 +107,18 @@ def print_stats(update: Update, context: CallbackContext):
         func = args.pop('func')
 
         try:
-            if args['me']:
+            if args['user']:
+                try:
+                    uid = args['user']
+                    args['user'] = uid, stats.users[uid][0]
+                except KeyError:
+                    send_help("unknown userid", context, update)
+                    return
+        except KeyError:
+            pass
+
+        try:
+            if args['me'] and not args['user']:  # Lets auto-user work by ignoring auto-input me arg
                 args['user'] = update.effective_user.id, update.effective_user.name
             del args['me']
         except KeyError:

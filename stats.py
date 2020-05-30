@@ -449,6 +449,11 @@ def get_parser(runner: StatsRunner) -> InternalParser:
                 group = subparser.add_mutually_exclusive_group()
                 group.add_argument('-me', action='store_true', help='calculate stats for yourself')
                 group.add_argument('-user', type=int, help=argparse.SUPPRESS)
+            elif arg.name == 'autouser':
+                subparser.set_defaults(me=True)
+                subparser.add_argument('-user', type=int, help=argparse.SUPPRESS)
+            elif arg.name == 'kwargs':
+                pass
             else:
                 if doc:
                     arg_doc = None
