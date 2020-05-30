@@ -5,6 +5,7 @@ from io import BytesIO
 import argparse
 import inspect
 import re
+from datetime import timedelta
 
 import pandas as pd
 import seaborn as sns
@@ -45,7 +46,8 @@ class StatsRunner(object):
                        'days': "get_counts_by_day",
                        'week': "get_week_by_hourday",
                        'history': "get_message_history",
-                       'corr': "get_user_correlation"}
+                       'corr': "get_user_correlation",
+                       'delta': "get_message_deltas"}
 
     def __init__(self, engine: Engine, tz: str = 'America/Toronto'):
         self.engine = engine
@@ -530,6 +532,79 @@ class StatsRunner(object):
         text = "\n".join(['HIGHEST CORRELATION:'] + split[:n] + ['\nLOWEST CORRELATION:'] + split[-n:])
 
         return f"**User Correlations for {escape_markdown(user[1])}**\n```\n{text}\n```", None
+
+    def get_message_deltas(self, start: str = None, end: str = None, n: int = 10, thresh: int = 500,
+                           autouser=None, **kwargs) -> Tuple[str, None]:
+        """
+        Return the median difference in message time between you and other users.
+        :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param n: Show n highest and lowest correlation scores
+        :param thresh: Only consider users with at least this many message group pairs with you
+        """
+        user: Tuple[int, str] = kwargs['user']
+        query_conditions = []
+        sql_dict = {}
+
+        if start:
+            sql_dict['start_dt'] = pd.to_datetime(start)
+            query_conditions.append("date >= %(start_dt)s")
+
+        if end:
+            sql_dict['end_dt'] = pd.to_datetime(end)
+            query_conditions.append("date < %(end_dt)s")
+
+        query_where = ""
+        if query_conditions:
+            query_where = f"AND {' AND '.join(query_conditions)}"
+
+        if n <= 0:
+            raise HelpException(f'n must be greater than 0')
+
+        if thresh < 0:
+            raise HelpException(f'n cannot be negative')
+
+        def fetch_mean_delta(me: int, other: int, where: str, sql_dict: dict) -> Tuple[timedelta, int]:
+            query = f"""
+                    select percentile_cont(0.5) within group (order by t_delta), count(t_delta)
+                    from(
+                        select start - lag("end", 1) over (order by start) as t_delta
+                        from (
+                                 select min(date) as start, max(date) as "end"
+                                 from (select date, from_user,
+                                              (dense_rank() over (order by date) -
+                                               dense_rank() over (partition by from_user order by date)
+                                                  ) as grp
+                                       from messages_utc
+                                       where from_user in (%(me)s, %(other)s) {where}
+                                       order by date
+                                      ) t
+                                 group by from_user, grp
+                                 order by start
+                        ) t1
+                    ) t2;
+                    """
+
+            sql_dict['me'] = me
+            sql_dict['other'] = other
+
+            with self.engine.connect() as con:
+                result = con.execute(query, sql_dict)
+            output: Tuple[timedelta, int] = result.fetchall()[0]
+
+            return output
+
+        results = {other: fetch_mean_delta(user[0], other, query_where, sql_dict) for other in self.users
+                   if user[0] != other}
+
+        user_deltas = {self.users[other][0]: pd.to_timedelta(result[0]) for other, result in results.items() if result[1] > thresh}
+
+        me = pd.Series(user_deltas).sort_values()
+        me = me.apply(lambda x: x.round('1s'))
+
+        text = me.iloc[:n].to_string(header=False, index=True)
+
+        return f"**Median message delays for {escape_markdown(user[1])} and:**\n```\n{text}\n```", None
 
 
 def get_parser(runner: StatsRunner) -> InternalParser:
