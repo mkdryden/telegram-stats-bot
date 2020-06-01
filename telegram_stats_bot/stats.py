@@ -598,7 +598,8 @@ class StatsRunner(object):
         results = {other: fetch_mean_delta(user[0], other, query_where, sql_dict) for other in self.users
                    if user[0] != other}
 
-        user_deltas = {self.users[other][0]: pd.to_timedelta(result[0]) for other, result in results.items() if result[1] > thresh}
+        user_deltas = {self.users[other][0]: pd.to_timedelta(result[0]) for other, result in results.items()
+                       if result[1] > thresh}
 
         me = pd.Series(user_deltas).sort_values()
         me = me.apply(lambda x: x.round('1s'))
