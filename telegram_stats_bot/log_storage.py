@@ -5,8 +5,8 @@ import os
 
 from sqlalchemy import MetaData, Table, Column, create_engine, BigInteger, TIMESTAMP, Text
 
-from parse import MessageDict
-from db import init_dbs
+from .parse import MessageDict
+from .db import init_dbs
 
 logger = logging.getLogger(__name__)
 metadata = MetaData()

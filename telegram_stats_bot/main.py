@@ -12,9 +12,9 @@ from telegram.ext.dispatcher import run_async
 from telegram.update import Update
 import appdirs
 
-from parse import parse_message
-from log_storage import JSONStore, PostgresStore
-from stats import StatsRunner, get_parser, HelpException
+from .parse import parse_message
+from .log_storage import JSONStore, PostgresStore
+from .stats import StatsRunner, get_parser, HelpException
 
 
 warnings.filterwarnings("ignore")

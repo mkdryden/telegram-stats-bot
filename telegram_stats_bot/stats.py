@@ -12,7 +12,7 @@ import seaborn as sns
 from matplotlib.figure import Figure
 from sqlalchemy.engine import Engine
 
-from utils import escape_markdown
+from .utils import escape_markdown
 
 sns.set_context('paper')
 sns.set_style('whitegrid')
