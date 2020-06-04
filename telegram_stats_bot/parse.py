@@ -19,7 +19,14 @@
 # You should have received a copy of the GNU Public License
 # along with this program. If not, see [http://www.gnu.org/licenses/].
 
-from typing import TypedDict, Tuple, Union, List
+import sys
+
+from typing import Tuple, Union, List
+if sys.version_info >= (3, 8):
+    from typing import TypedDict
+else:
+    from typing_extensions import TypedDict
+
 from datetime import datetime
 
 import telegram
