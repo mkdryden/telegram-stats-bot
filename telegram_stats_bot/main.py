@@ -28,7 +28,7 @@ import os
 
 import telegram
 from telegram.error import BadRequest
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, JobQueue
 from telegram.ext.dispatcher import run_async
 from telegram.update import Update
 import appdirs
@@ -76,6 +76,11 @@ def log_message(update: Update, context: CallbackContext):
             if i:
                 bak_store.append_data('user_events', i)
                 store.append_data('user_events', i)
+
+
+def test_can_read_all_group_messages(context: CallbackContext):
+    if not context.bot.can_read_all_group_messages:
+        logger.error("Bot privacy is set to enabled, cannot log messages!!!")
 
 
 @run_async
@@ -199,7 +204,8 @@ if __name__ == '__main__':
     log_handler = MessageHandler(Filters.chat(chat_id=args.chat_id), log_message)
     dispatcher.add_handler(log_handler)
 
-    job_queue = updater.job_queue
+    job_queue: JobQueue = updater.job_queue
     update_users_job = job_queue.run_repeating(update_usernames, interval=3600, first=0, context=args.chat_id)
+    test_privacy_job = job_queue.run_once(test_can_read_all_group_messages, 0)
 
     updater.start_polling()
