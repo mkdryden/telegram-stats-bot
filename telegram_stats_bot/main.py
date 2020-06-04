@@ -78,6 +78,10 @@ def log_message(update: Update, context: CallbackContext):
                 store.append_data('user_events', i)
 
 
+def get_chatid(update: Update, context: CallbackContext):
+    context.bot.send_message(chat_id=update.effective_chat.id,
+                             text=f"Chat id: {update.effective_chat.id}")
+
 def test_can_read_all_group_messages(context: CallbackContext):
     if not context.bot.can_read_all_group_messages:
         logger.error("Bot privacy is set to enabled, cannot log messages!!!")
@@ -201,8 +205,12 @@ if __name__ == '__main__':
     stats_handler = CommandHandler('stats', print_stats, filters=~Filters.update.edited_message)
     dispatcher.add_handler(stats_handler)
 
-    log_handler = MessageHandler(Filters.chat(chat_id=args.chat_id), log_message)
-    dispatcher.add_handler(log_handler)
+    chat_id_handler = CommandHandler('chatid', get_chatid, filters=~Filters.update.edited_message)
+    dispatcher.add_handler(chat_id_handler)
+
+    if args.chat_id != 0:
+        log_handler = MessageHandler(Filters.chat(chat_id=args.chat_id), log_message)
+        dispatcher.add_handler(log_handler)
 
     job_queue: JobQueue = updater.job_queue
     update_users_job = job_queue.run_repeating(update_usernames, interval=3600, first=0, context=args.chat_id)
