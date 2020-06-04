@@ -70,7 +70,8 @@ def init_dbs(engine: Engine):
         (
             user_id  bigint,
             date     timestamptz,
-            username text
+            username text,
+            display_name text
         );
         
         create index if not exists user_names_user_id_date_index
