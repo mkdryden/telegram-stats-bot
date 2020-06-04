@@ -102,6 +102,8 @@ def update_usernames(context: CallbackContext):  # context.job.context contains 
                     to_update[u_id] = tg_users[u_id][0], None
                 else:
                     to_update[u_id] = tg_users[u_id]
+        except KeyError:  # First time user
+            to_update[u_id] = tg_users[u_id]
         except BadRequest:  # Handle users no longer in chat (or maybe haven't interacted with the bot??)
             pass
     stats.update_user_ids(to_update)
