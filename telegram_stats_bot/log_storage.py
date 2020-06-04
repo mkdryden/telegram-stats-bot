@@ -18,6 +18,7 @@
 #
 # You should have received a copy of the GNU Public License
 # along with this program. If not, see [http://www.gnu.org/licenses/].
+from copy import copy
 
 import datetime
 import logging
@@ -25,6 +26,8 @@ import json
 import os
 
 from sqlalchemy import MetaData, Table, Column, create_engine, BigInteger, TIMESTAMP, Text
+from sqlalchemy_utils import database_exists
+from sqlalchemy_utils.functions.orm import quote
 
 from .parse import MessageDict
 from .db import init_dbs
@@ -69,7 +72,24 @@ class JSONStore(object):
 
 class PostgresStore(object):
     def __init__(self, connection_url: str):
-        self.engine = create_engine(connection_url, echo=False)
+        self.engine = create_engine(connection_url, echo=False, isolation_level="AUTOCOMMIT")
+        if not database_exists(self.engine.url):
+            text = f"""
+                    CREATE DATABASE {quote(self.engine, self.engine.url.database)}
+                    ENCODING 'utf-8'
+                    TEMPLATE {quote(self.engine, 'template1')}
+                    """
+
+            url = copy(self.engine.url)
+            url.database = 'postgres'
+
+            engine = create_engine(url, echo=False, isolation_level="AUTOCOMMIT")
+            result_proxy = engine.execute(text)
+
+            if result_proxy is not None:
+                result_proxy.close()
+            engine.dispose()
+
         init_dbs(self.engine)
 
     def append_data(self, name: str, data: MessageDict):
