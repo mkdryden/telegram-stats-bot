@@ -444,10 +444,13 @@ class StatsRunner(object):
                 averages = 0
         if averages:
             df['msg_rolling'] = df['messages'].rolling(averages, center=True).mean()
+            alpha = 0.5
+        else:
+            alpha = 1
 
         fig = Figure()  # TODO: One day pandas will let you use constrained_layout=True here...
         subplot = fig.subplots()
-        df.plot(x='day', y='messages', alpha=0.5, legend=False, ax=subplot)
+        df.plot(x='day', y='messages', alpha=alpha, legend=False, ax=subplot)
         if averages:
             df.plot(x='day', y='msg_rolling', legend=False, ax=subplot)
         subplot.set_ylabel("Messages")
