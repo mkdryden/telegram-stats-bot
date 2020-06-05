@@ -361,8 +361,8 @@ class StatsRunner(object):
         df['day_name'] = df.index.day_name()
         df_grouped = df[['messages', 'hour', 'day_name']].groupby(['hour', 'day_name']).sum().unstack()
         df_grouped = df_grouped.loc[:, 'messages']
-        df_grouped = df_grouped[['Monday', 'Tuesday', 'Wednesday', 'Thursday',
-                                 'Friday', 'Saturday', 'Sunday']]
+        df_grouped = df_grouped.reindex(columns=['Monday', 'Tuesday', 'Wednesday', 'Thursday',
+                                                 'Friday', 'Saturday', 'Sunday'])
 
         fig = Figure(constrained_layout=True)
         ax = fig.subplots()
