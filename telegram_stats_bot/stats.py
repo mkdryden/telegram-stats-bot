@@ -208,6 +208,10 @@ class StatsRunner(object):
         df['day'] = df.day.dt.tz_convert(self.tz)
         df = df.set_index('day')
         df = df.asfreq('h', fill_value=0)  # Insert 0s for periods with no messages
+
+        if (df.index.max() - df.index.min()) < pd.Timedelta('24 hours'):  # Deal with data covering < 24 hours
+            df = df.reindex(pd.date_range(df.index.min(), periods=24, freq='h'))
+
         df['hour'] = df.index.hour
 
         if user:
@@ -225,7 +229,7 @@ class StatsRunner(object):
         subplot.set_ylim(bottom=0, top=df['messages'].quantile(0.999, interpolation='higher'))
 
         subplot.axvspan(11.5, 23.5, zorder=0, color=(0, 0, 0, 0.05))
-        subplot.set_xlim(-1, 24)
+        subplot.set_xlim(-1, 24)  # Set explicitly to plot properly even with missing data
 
         if user:
             subplot.set_ylabel('Messages per Week')
