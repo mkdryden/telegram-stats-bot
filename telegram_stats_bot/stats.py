@@ -286,6 +286,8 @@ class StatsRunner(object):
         df['day'] = df.day.dt.tz_convert(self.tz)
         df = df.set_index('day')
         df = df.asfreq('d', fill_value=0)  # Fill periods with no messages
+        if (df.index.max() - df.index.min()) < pd.Timedelta('7 days'):  # Deal with data covering < 7 days
+            df = df.reindex(pd.date_range(df.index.min(), periods=7, freq='d'))
         df['dow'] = df.index.weekday
         df['day_name'] = df.index.day_name()
         df = df.sort_values('dow')  # Make sure start is Monday
@@ -301,6 +303,7 @@ class StatsRunner(object):
         subplot.axvspan(4.5, 6.5, zorder=0, color=(0, .8, 0, 0.1))
         subplot.set_xlabel('')
         subplot.set_ylabel('Messages per Day')
+        subplot.set_xlim(-0.5, 6.5)  # Need to set this explicitly to show full range of days with na data
         if user:
             subplot.set_title(f"Messages by Day of Week for {user[1]}")
         else:
