@@ -403,8 +403,10 @@ class StatsRunner(object):
         """
         query_conditions = []
         sql_dict = {}
-        if averages is None:
-            averages = 30
+
+        if averages:
+            if averages < 0:
+                raise HelpException("averages must be >= 0")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -435,6 +437,11 @@ class StatsRunner(object):
             df = pd.read_sql_query(query, con, params=sql_dict)
         df['day'] = pd.to_datetime(df.day)
         df['day'] = df.day.dt.tz_convert(self.tz)
+
+        if averages is None:
+            averages = len(df) // 20
+            if averages <= 1:
+                averages = 0
         if averages:
             df['msg_rolling'] = df['messages'].rolling(averages, center=True).mean()
 
