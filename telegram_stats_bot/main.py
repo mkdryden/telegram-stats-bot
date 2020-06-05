@@ -104,8 +104,8 @@ def update_usernames(context: CallbackContext):  # context.job.context contains 
                     to_update[u_id] = tg_users[u_id]
         except KeyError:  # First time user
             to_update[u_id] = tg_users[u_id]
-        except BadRequest:  # Handle users no longer in chat (or maybe haven't interacted with the bot??)
-            pass
+        except BadRequest:  # Handle users no longer in chat or haven't messaged since bot joined
+            logger.debug("Couldn't get user %s", u_id)  # debug level because will spam every hour
     stats.update_user_ids(to_update)
     if stats.users_lock.acquire(timeout=10):
         stats.users = stats.get_db_users()
