@@ -632,6 +632,9 @@ class StatsRunner(object):
         me = pd.Series(user_deltas).sort_values()
         me = me.apply(lambda x: x.round('1s'))
 
+        if len(me) < 1:
+            return "\n```\nSorry, not enough data, try a bigger date range or decrease -thresh.\n```", None
+
         text = me.iloc[:n].to_string(header=False, index=True)
 
         return f"**Median message delays for {escape_markdown(user[1])} and:**\n```\n{text}\n```", None
