@@ -709,6 +709,11 @@ class StatsRunner(object):
 
         a = list(zip(df.columns.values, ["Total"] + df.iloc[:, 1:].sum().to_list()))
         df = df.append({key: value for key, value in a}, ignore_index=True)
+        df['Group Count'] = df['Group Count'].astype('Int64')
+        try:
+            df['User Count'] = df['User Count'].astype('Int64')
+        except KeyError:
+            pass
         text = df.to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
         if user:
