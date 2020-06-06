@@ -82,6 +82,7 @@ def get_chatid(update: Update, context: CallbackContext):
     context.bot.send_message(chat_id=update.effective_chat.id,
                              text=f"Chat id: {update.effective_chat.id}")
 
+
 def test_can_read_all_group_messages(context: CallbackContext):
     if not context.bot.can_read_all_group_messages:
         logger.error("Bot privacy is set to enabled, cannot log messages!!!")
