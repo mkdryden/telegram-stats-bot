@@ -650,12 +650,13 @@ class StatsRunner(object):
 
         return f"**Median message delays for {escape_markdown(user[1])} and:**\n```\n{text}\n```", None
 
-    def get_type_stats(self, user: Tuple[int, str] = None, start: str = None, end: str = None) -> Tuple[str, None]:
+    def get_type_stats(self, start: str = None, end: str = None, autouser=None, **kwargs) -> Tuple[str, None]:
         """
         Print table of message statistics by type.
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         """
+        user: Tuple[int, str] = kwargs['user']
         query_conditions = []
         sql_dict = {}
 
