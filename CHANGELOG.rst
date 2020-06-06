@@ -10,6 +10,10 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 `Unreleased`_
 -------------
 
+Added
+-----
+- Message type statistics ``/stats types``
+
 Fixed
 -----
 - Example images were missing in pypi distributions

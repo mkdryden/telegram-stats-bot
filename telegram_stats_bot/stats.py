@@ -68,7 +68,8 @@ class StatsRunner(object):
                        'week': "get_week_by_hourday",
                        'history': "get_message_history",
                        'corr': "get_user_correlation",
-                       'delta': "get_message_deltas"}
+                       'delta': "get_message_deltas",
+                       'types': "get_type_stats"}
 
     def __init__(self, engine: Engine, tz: str = 'America/Toronto'):
         self.engine = engine
@@ -648,6 +649,70 @@ class StatsRunner(object):
         text = me.iloc[:n].to_string(header=False, index=True)
 
         return f"**Median message delays for {escape_markdown(user[1])} and:**\n```\n{text}\n```", None
+
+    def get_type_stats(self, user: Tuple[int, str] = None, start: str = None, end: str = None) -> Tuple[str, None]:
+        """
+        Make a plot of message history over time
+        :param averages: Moving average width (in days)
+        :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        """
+        query_conditions = []
+        sql_dict = {}
+
+        if start:
+            sql_dict['start_dt'] = pd.to_datetime(start)
+            query_conditions.append("date >= %(start_dt)s")
+
+        if end:
+            sql_dict['end_dt'] = pd.to_datetime(end)
+            query_conditions.append("date < %(end_dt)s")
+
+        query_where = ""
+        if query_conditions:
+            query_where = f" AND {' AND '.join(query_conditions)}"
+
+        query = f"""
+                    SELECT type, count(*) as count
+                    FROM messages_utc
+                    WHERE type NOT IN ('new_chat_members', 'left_chat_member', 'new_chat_photo',
+                                       'new_chat_title', 'migrate_from_group', 'pinned_message')
+                          {query_where}
+                    GROUP BY type
+                    ORDER BY count DESC;
+                 """
+
+        with self.engine.connect() as con:
+            df = pd.read_sql_query(query, con, params=sql_dict)
+        df['Group Percent'] = df['count'] / df['count'].sum() * 100
+        df.columns = ['type', 'Group Count', 'Group Percent']
+
+
+        if user:
+            sql_dict['user'] = user[0]
+            query_conditions.append("from_user = %(user)s")
+
+            query = f"""
+                        SELECT type, count(*) as user_count
+                        FROM messages_utc
+                        WHERE type NOT IN ('new_chat_members', 'left_chat_member', 'new_chat_photo',
+                                           'new_chat_title', 'migrate_from_group', 'pinned_message')
+                              AND {' AND '.join(query_conditions)}
+                        GROUP BY type
+                        ORDER BY user_count DESC;
+                     """
+            with self.engine.connect() as con:
+                df_u = pd.read_sql_query(query, con, params=sql_dict)
+            df_u['User Percent'] = df_u['user_count'] / df_u['user_count'].sum() * 100
+            df_u.columns = ['type', 'User Count', 'User Percent']
+
+            df = df.merge(df_u, on="type", how="outer")
+        text = df.to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
+
+        if user:
+            return f"**Messages by type, {escape_markdown(user[1])} vs group:**\n```\n{text}\n```", None
+        else:
+            return f"**Messages by type:**\n```\n{text}\n```", None
 
 
 def get_parser(runner: StatsRunner) -> InternalParser:
