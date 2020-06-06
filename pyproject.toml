@@ -6,7 +6,7 @@ authors = ["Michael DM Dryden <mk.dryden@utoronto.ca>"]
 repository = "https://github.com/mkdryden/telegram-stats-bot"
 license = "gpl-3.0-or-later"
 readme = "README.rst"
-include = ["examples/*"]
+include = ["examples/*", "CHANGELOG.rst"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
