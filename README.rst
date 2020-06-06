@@ -193,28 +193,28 @@ hours
 -----
 ``/stats hours`` returns a plot of message frequency for the hours of the day.
 
-.. image:: examples/hours.jpg
+.. image:: examples/hours.png
    :alt: Example of hours plot
 
 days
 ----
 ``/stats days`` returns a plot of message frequency for the days of the week.
 
-.. image:: examples/days.jpg
+.. image:: examples/days.png
    :alt: Example of days plot
 
 week
 ----
 ``/stats week`` returns a plot of total messages over the data period by day of week and hour of day.
 
-.. image:: examples/week.jpg
+.. image:: examples/week.png
    :alt: Example of week plot
 
 history
 -------
 ``/stats history`` returns a plot of messages versus date.
 
-.. image:: examples/history.jpg
+.. image:: examples/history.png
    :alt: Example of history plot
 
 corr
