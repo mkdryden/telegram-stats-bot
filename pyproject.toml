@@ -3,8 +3,10 @@ name = "telegram-stats-bot"
 version = "0.1.1"
 description = "A logging and statistics bot for Telegram based on python-telegram-bot."
 authors = ["Michael DM Dryden <mk.dryden@utoronto.ca>"]
+repository = "https://github.com/mkdryden/telegram-stats-bot"
 license = "gpl-3.0-or-later"
 readme = "README.rst"
+include = ["examples/*"]
 
 [tool.poetry.dependencies]
 python = "^3.7"
