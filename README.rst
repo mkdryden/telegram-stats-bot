@@ -252,6 +252,27 @@ delta
     @SuperSalad           00:09:05
     @ABoredProgrammer     00:09:06
 
+types
+-----
+``/stats types`` returns a table of messages by type, comparing the requesting user with the full group.
+
+.. code::
+
+ Messages by type, @AUser vs group:
+       type  Group Count  Group Percent  User Count  User Percent
+       text     528813.0           88.3     13929.0          83.4
+    sticker      34621.0            5.8      1226.0           7.3
+      photo      25995.0            4.3      1208.0           7.2
+  animation       6983.0            1.2       274.0           1.6
+      video       1325.0            0.2        48.0           0.3
+      voice        475.0            0.1         2.0           0.0
+   location        252.0            0.0         2.0           0.0
+ video_note         84.0            0.0         1.0           0.0
+      audio         62.0            0.0         1.0           0.0
+       poll         29.0            0.0         1.0           0.0
+   document          1.0            0.0         1.0           0.0
+      Total     598640.0          100.0     16693.0         100.0
+
 ----------
 The Future
 ----------
