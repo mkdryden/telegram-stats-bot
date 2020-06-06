@@ -652,8 +652,7 @@ class StatsRunner(object):
 
     def get_type_stats(self, user: Tuple[int, str] = None, start: str = None, end: str = None) -> Tuple[str, None]:
         """
-        Make a plot of message history over time
-        :param averages: Moving average width (in days)
+        Print table of message statistics by type.
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         """
@@ -686,7 +685,6 @@ class StatsRunner(object):
             df = pd.read_sql_query(query, con, params=sql_dict)
         df['Group Percent'] = df['count'] / df['count'].sum() * 100
         df.columns = ['type', 'Group Count', 'Group Percent']
-
 
         if user:
             sql_dict['user'] = user[0]
