@@ -57,6 +57,8 @@ Table of contents
 
   - `delta`_
 
+  - `types`_
+
 - `License`_
 
 ------------
