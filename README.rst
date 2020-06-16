@@ -14,10 +14,6 @@ telegram-stats-bot
    :target: https://github.com/mkdryden/telegram-stats-bot
    :alt: GitHub Commit Activity
 
-.. image:: https://img.shields.io/pypi/v/telegram-stats-bot?style=flat-square
-   :target: https://pypi.org/project/telegram-stats-bot/
-   :alt: PyPi Package Version
-
 .. image:: https://img.shields.io/pypi/l/telegram-stats-bot?style=flat-square
    :target: https://www.gnu.org/licenses/gpl-3.0-or-later.html
    :alt: LGPLv3 License
