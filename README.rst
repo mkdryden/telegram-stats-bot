@@ -43,7 +43,7 @@ Table of contents
 
 - `Fetching Stats`_
 
-- `counts`_
+  - `counts`_
 
   - `hours`_
 
@@ -52,6 +52,8 @@ Table of contents
   - `week`_
 
   - `history`_
+
+  - `titles`_
 
   - `corr`_
 
@@ -219,6 +221,13 @@ history
 
 .. image:: examples/history.png
    :alt: Example of history plot
+
+titles
+------
+``/stats titles`` returns a plot of group titles over time.
+
+.. image:: examples/titles.png
+   :alt: Example of title history plot
 
 corr
 ----
