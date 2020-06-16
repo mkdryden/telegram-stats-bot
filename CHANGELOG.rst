@@ -9,6 +9,9 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 -------------
 `Unreleased`_
 -------------
+---------------------
+`0.2.0`_ - 2020-06-16
+---------------------
 
 Added
 -----
@@ -28,3 +31,4 @@ Fixed
 
 .. _Unreleased: https://github.com/mkdryden/telegram-stats-bot/compare/v0.1.1...HEAD
 .. _0.1.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.1.1
+.. _0.2.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.2.0
