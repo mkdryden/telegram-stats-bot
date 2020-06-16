@@ -26,11 +26,13 @@ from io import BytesIO
 import argparse
 import inspect
 import re
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 import pandas as pd
 import seaborn as sns
+import numpy as np
 from matplotlib.figure import Figure
+from matplotlib.dates import date2num
 from sqlalchemy.engine import Engine
 
 from .utils import escape_markdown
@@ -67,6 +69,7 @@ class StatsRunner(object):
                        'days': "get_counts_by_day",
                        'week': "get_week_by_hourday",
                        'history': "get_message_history",
+                       'titles': 'get_title_history',
                        'corr': "get_user_correlation",
                        'delta': "get_message_deltas",
                        'types': "get_type_stats"}
@@ -466,6 +469,85 @@ class StatsRunner(object):
         bio = BytesIO()
         bio.name = 'plot.png'
         fig.savefig(bio)
+        bio.seek(0)
+
+        return None, bio
+
+    def get_title_history(self, start: str = None, end: str = None) \
+            -> Tuple[None, BytesIO]:
+        """
+        Make a plot of group titles history over time
+        :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        """
+        query_conditions = []
+        sql_dict = {}
+
+        if start:
+            sql_dict['start_dt'] = pd.to_datetime(start)
+            query_conditions.append("date >= %(start_dt)s")
+
+        if end:
+            sql_dict['end_dt'] = pd.to_datetime(end)
+            query_conditions.append("date < %(end_dt)s")
+
+        query_where = ""
+        if query_conditions:
+            query_where = f"AND {' AND '.join(query_conditions)}"
+
+        query = f"""
+                    SELECT date, new_chat_title
+                    FROM messages_utc
+                    WHERE type = 'new_chat_title' {query_where}
+                    ORDER BY date;
+                 """
+
+        with self.engine.connect() as con:
+            df = pd.read_sql_query(query, con, params=sql_dict)
+
+        df['idx'] = np.arange(len(df))
+        df['diff'] = df['date'].diff(-1)
+        df['end'] = df['date'] - df['diff']
+
+        if end:
+            last = sql_dict['end_dt']
+        else:
+            last = pd.Timestamp(datetime.now(), tz='utc')
+
+        df_end = df['end']
+        df_end.iloc[-1] = last
+        df.loc[:, 'end'] = df_end
+
+        fig = Figure(constrained_layout=True, figsize=(12, 0.15 * len(df)))
+        ax = fig.subplots()
+
+        x = df.iloc[:-1].end
+        y = df.iloc[:-1].idx + .5
+
+        ax.scatter(x, y, zorder=4, color=sns.color_palette()[1])
+
+        titles = list(zip(df.date.apply(date2num),
+                          df.end.apply(date2num) - df.date.apply(date2num)))
+
+        for n, i in enumerate(titles):
+            ax.broken_barh([i], (n, 1))
+            ax.annotate(df.new_chat_title[n], xy=(i[0] + i[1], n), xycoords='data',
+                        xytext=(10, 0), textcoords='offset points',
+                        horizontalalignment='left', verticalalignment='bottom')
+
+        ax.margins(0.2)
+        ax.set_ylabel("")
+        ax.set_ylim(-1, (df.idx.max() + 1))
+        ax.set_xlim(titles[0][0] - 1, None)
+        ax.set_xlabel("")
+        ax.set_title("Chat Title History")
+        ax.grid(False, which='both', axis='y')
+        ax.tick_params(axis='y', which='both', labelleft=False, left=False)
+        sns.despine(fig=fig, left=True)
+
+        bio = BytesIO()
+        bio.name = 'plot.png'
+        fig.savefig(bio, dpi=200)
         bio.seek(0)
 
         return None, bio
