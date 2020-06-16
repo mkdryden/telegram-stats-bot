@@ -510,7 +510,7 @@ class StatsRunner(object):
         df['end'] = df['date'] - df['diff']
 
         if end:
-            last = sql_dict['end_dt']
+            last = pd.Timestamp(sql_dict['end_dt'], tz=self.tz).tz_convert('utc')
         else:
             last = pd.Timestamp(datetime.now(), tz='utc')
 
