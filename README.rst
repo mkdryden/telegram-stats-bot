@@ -57,6 +57,8 @@ Table of contents
 
   - `types`_
 
+  - `random`_
+
 - `License`_
 
 ------------
@@ -279,6 +281,10 @@ types
        poll         29.0            0.0         1.0           0.0
    document          1.0            0.0         1.0           0.0
       Total     598640.0          100.0     16693.0         100.0
+
+random
+______
+``/stats random`` prints a random message from the database.
 
 ----------
 The Future

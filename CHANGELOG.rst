@@ -13,6 +13,10 @@ Fixed
 -----
 - Correctly escape all reserved markdown characters and markdown links
 
+Added
+-----
+- Print a random message from the log ``/stats random``
+
 ---------------------
 `0.2.0`_ - 2020-06-16
 ---------------------

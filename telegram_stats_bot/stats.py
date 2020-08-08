@@ -72,7 +72,8 @@ class StatsRunner(object):
                        'titles': 'get_title_history',
                        'corr': "get_user_correlation",
                        'delta': "get_message_deltas",
-                       'types': "get_type_stats"}
+                       'types': "get_type_stats",
+                       'random': "get_random_message"}
 
     def __init__(self, engine: Engine, tz: str = 'America/Toronto'):
         self.engine = engine
@@ -802,6 +803,50 @@ class StatsRunner(object):
             return f"**Messages by type, {escape_markdown(user[1])} vs group:**\n```\n{text}\n```", None
         else:
             return f"**Messages by type:**\n```\n{text}\n```", None
+
+    def get_random_message(self, start: str = None, end: str = None,
+                           user: Tuple[int, str] = None, **kwargs) -> Tuple[str, None]:
+        """
+        Display a random message.
+        :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        """
+        query_conditions = []
+        sql_dict = {}
+
+        if user:
+            sql_dict['user'] = user[0]
+            query_conditions.append("from_user = %(user)s")
+
+        if start:
+            sql_dict['start_dt'] = pd.to_datetime(start)
+            query_conditions.append("date >= %(start_dt)s")
+
+        if end:
+            sql_dict['end_dt'] = pd.to_datetime(end)
+            query_conditions.append("date < %(end_dt)s")
+
+        query_where = ""
+        if query_conditions:
+            query_where = f"AND {' AND '.join(query_conditions)}"
+
+        query = f"""
+                SELECT date, from_user, text
+                FROM messages_utc
+                WHERE type = 'text'
+                {query_where}
+                ORDER BY RANDOM()
+                LIMIT 1;
+                """
+
+        with self.engine.connect() as con:
+            result = con.execute(query, sql_dict)
+        date, from_user, text = result.fetchall()[0]
+
+        return f"*On {escape_markdown(date.strftime('%Y-%m-%d'))}, {escape_markdown(self.users[from_user][0])}" \
+               f" gave these words of wisdom:*\n" \
+               f"{escape_markdown(text)}\n",\
+               None
 
 
 def get_parser(runner: StatsRunner) -> InternalParser:
