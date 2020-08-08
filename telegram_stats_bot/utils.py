@@ -21,6 +21,13 @@
 
 import re
 
+md_match = re.compile(r"(\[[^][]*]\(http[^()]*\))|([_*[\]()~>#+-=|{}.!\\])")
+
 
 def escape_markdown(string: str) -> str:
-    return re.sub(r'([\\_*\[\]()`])', r'\\\g<1>', string)
+    def url_match(match: re.Match):
+        if match.group(1):
+            return f'{match.group(1)}'
+        return f'\\{match.group(2)}'
+
+    return re.sub(md_match, url_match, string)
