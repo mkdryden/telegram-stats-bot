@@ -474,12 +474,13 @@ class StatsRunner(object):
 
         return None, bio
 
-    def get_title_history(self, start: str = None, end: str = None) \
+    def get_title_history(self, start: str = None, end: str = None, duration: bool = False) \
             -> Tuple[None, BytesIO]:
         """
         Make a plot of group titles history over time
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param duration: If true, order by duration instead of time.
         """
         query_conditions = []
         sql_dict = {}
@@ -507,8 +508,8 @@ class StatsRunner(object):
             df = pd.read_sql_query(query, con, params=sql_dict)
 
         df['idx'] = np.arange(len(df))
-        df['diff'] = df['date'].diff(-1)
-        df['end'] = df['date'] - df['diff']
+        df['diff'] = -df['date'].diff(-1)
+        df['end'] = df['date'] + df['diff']
 
         if end:
             last = pd.Timestamp(sql_dict['end_dt'], tz=self.tz).tz_convert('utc')
@@ -518,33 +519,51 @@ class StatsRunner(object):
         df_end = df['end']
         df_end.iloc[-1] = last
         df.loc[:, 'end'] = df_end
+        df.loc[:, 'diff'].iloc[-1] = df.iloc[-1]['end'] - df.iloc[-1]['date']
 
         fig = Figure(constrained_layout=True, figsize=(12, 0.15 * len(df)))
         ax = fig.subplots()
 
-        x = df.iloc[:-1].end
-        y = df.iloc[:-1].idx + .5
+        if duration:
+            df = df.sort_values('diff')
+            df = df.reset_index(drop=True)
+            df['idx'] = df.index
 
-        ax.scatter(x, y, zorder=4, color=sns.color_palette()[1])
+            ax.barh(df.idx, df['diff'].dt.days, tick_label=df.new_chat_title)
 
-        titles = list(zip(df.date.apply(date2num),
-                          df.end.apply(date2num) - df.date.apply(date2num)))
+            ax.margins(0.2)
+            ax.set_ylabel("")
+            ax.set_xlabel("Duration (days)")
+            ax.set_ylim(-1, (df.idx.max() + 1))
+            ax.set_title("Chat Title History")
+            ax.grid(False, which='both', axis='y')
+            sns.despine(fig=fig, left=True)
 
-        for n, i in enumerate(titles):
-            ax.broken_barh([i], (n, 1))
-            ax.annotate(df.new_chat_title[n], xy=(i[0] + i[1], n), xycoords='data',
-                        xytext=(10, 0), textcoords='offset points',
-                        horizontalalignment='left', verticalalignment='bottom')
+        else:
+            x = df.iloc[:-1].end
+            y = df.iloc[:-1].idx + .5
 
-        ax.margins(0.2)
-        ax.set_ylabel("")
-        ax.set_ylim(-1, (df.idx.max() + 1))
-        ax.set_xlim(titles[0][0] - 1, None)
-        ax.set_xlabel("")
-        ax.set_title("Chat Title History")
-        ax.grid(False, which='both', axis='y')
-        ax.tick_params(axis='y', which='both', labelleft=False, left=False)
-        sns.despine(fig=fig, left=True)
+            ax.scatter(x, y, zorder=4, color=sns.color_palette()[1])
+
+            titles = list(zip(df.date.apply(date2num),
+                              df.end.apply(date2num) - df.date.apply(date2num)))
+
+            for n, i in enumerate(titles):
+                ax.broken_barh([i], (n, 1))
+                ax.annotate(df.new_chat_title[n], xy=(i[0] + i[1], n), xycoords='data',
+                            xytext=(10, 0), textcoords='offset points',
+                            horizontalalignment='left', verticalalignment='bottom')
+
+            ax.set_ylim(-1, (df.idx.max() + 1))
+            ax.set_xlim(titles[0][0] - 1, None)
+
+            ax.margins(0.2)
+            ax.set_ylabel("")
+            ax.set_xlabel("")
+            ax.set_title("Chat Title History")
+            ax.grid(False, which='both', axis='y')
+            ax.tick_params(axis='y', which='both', labelleft=False, left=False)
+            sns.despine(fig=fig, left=True)
 
         bio = BytesIO()
         bio.name = 'plot.png'
