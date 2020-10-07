@@ -16,6 +16,7 @@ Fixed
 Added
 -----
 - Print a random message from the log ``/stats random``
+- Allow sorting title history plot by duration
 
 ---------------------
 `0.2.0`_ - 2020-06-16

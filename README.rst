@@ -283,7 +283,7 @@ types
       Total     598640.0          100.0     16693.0         100.0
 
 random
-______
+------
 ``/stats random`` prints a random message from the database.
 
 ----------
