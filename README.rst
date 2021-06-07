@@ -99,7 +99,7 @@ The bot is still in active development but at the moment, it features:
 Basic Requirements
 ------------------
 
-- Python 3.7+
+- Python 3.8+
 
 - A Telegram bot token with privacy mode disabled (needed to log messages)
 

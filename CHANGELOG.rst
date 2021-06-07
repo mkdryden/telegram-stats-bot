@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+----------
+Unreleased
+----------
+Fixed
+-----
+- Allow quotes in lquery parameters
+
 ---------------------
 `0.4.0`_ - 2021-06-06
 ---------------------
@@ -66,4 +73,4 @@ Fixed
 .. _0.2.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.2.0
 .. _0.3.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.3.0
 .. _0.3.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.3.1
-.. _0.3.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.4.0
+.. _0.4.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.4.0

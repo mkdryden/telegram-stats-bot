@@ -148,7 +148,7 @@ class StatsRunner(object):
             raise HelpException(f'n must be greater than 0, got: {n}')
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
+            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -199,7 +199,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
+            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -290,7 +290,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
+            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -374,7 +374,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
+            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -459,7 +459,7 @@ class StatsRunner(object):
                 raise HelpException("averages must be >= 0")
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
+            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -744,7 +744,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
+            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -893,7 +893,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
+            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
 
         if user:
             sql_dict['user'] = user[0]
