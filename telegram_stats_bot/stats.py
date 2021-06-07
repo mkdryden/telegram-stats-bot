@@ -36,6 +36,7 @@ from matplotlib.dates import date2num
 from sqlalchemy.engine import Engine
 
 from .utils import escape_markdown
+from . import __version__
 
 sns.set_context('paper')
 sns.set_style('whitegrid')
@@ -58,6 +59,9 @@ class InternalParser(argparse.ArgumentParser):
 
     def print_help(self, file=None) -> None:
         raise HelpException(self.format_help())
+
+    def _print_message(self, message: str, file=None) -> None:
+        raise HelpException(message)
 
     def exit(self, status=None, message=None):
         pass
@@ -878,6 +882,8 @@ def get_parser(runner: StatsRunner) -> InternalParser:
     parser = InternalParser(prog="/stats")
     parser.set_defaults(func=runner.get_chat_counts)
     subparsers = parser.add_subparsers(title="Statistics:")
+
+    parser.add_argument('-v', '--version', action='version', version=__version__)
 
     for name, func in runner.allowed_methods.items():
         try:
