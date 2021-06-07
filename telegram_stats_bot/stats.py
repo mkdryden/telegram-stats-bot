@@ -139,7 +139,6 @@ class StatsRunner(object):
         :param n: Number of users to show
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
-        :return:
         """
         date_query = None
         sql_dict = {}

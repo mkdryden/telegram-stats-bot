@@ -173,7 +173,14 @@ def print_stats(update: Update, context: CallbackContext):
         context.bot.send_photo(chat_id=update.effective_chat.id, photo=image)
 
 
-def send_help(text, context, update):
+def send_help(text: str, context: CallbackContext, update: Update):
+    """
+    Send help text to user. Tries to send a direct message if possible.
+    :param text: text to send
+    :param context:
+    :param update:
+    :return:
+    """
     try:
         context.bot.send_message(chat_id=update.effective_user.id,
                                  text=f"```\n{text}\n```",
