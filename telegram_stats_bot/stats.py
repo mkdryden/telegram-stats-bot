@@ -79,15 +79,17 @@ class StatsRunner(object):
         self.engine = engine
         self.tz = tz
 
-        self.users: Dict[int, Tuple[str, str]] = self.get_db_users()
+        self.users: Dict[int, Tuple[str, str]] = self._get_db_users()
         self.users_lock = Lock()
 
-    def get_message_user_ids(self) -> List[int]:
+    def _get_message_user_ids(self) -> List[int]:
+        """Returns list of unique user ids from messages in database."""
         with self.engine.connect() as con:
             result = con.execute("SELECT DISTINCT from_user FROM messages_utc;")
         return [user for user, in result.fetchall()]
 
-    def get_db_users(self) -> Dict[int, Tuple[str, str]]:
+    def _get_db_users(self) -> Dict[int, Tuple[str, str]]:
+        """Returns dictionary mapping user ids to usernames and full names."""
         query = """
         select user_id, username, display_name from (
             select
@@ -105,7 +107,11 @@ class StatsRunner(object):
 
         return {user_id: (username, name) for user_id, username, name in result}
 
-    def update_user_ids(self, user_dict: Dict[int, Tuple[str, str]]):
+    def _update_user_ids(self, user_dict: Dict[int, Tuple[str, str]]):
+        """
+        Updates user names table with user_dict
+        :param user_dict: mapping of user ids to (username, display name)
+        """
         for uid in user_dict:
             username, display_name = user_dict[uid]
             sql_dict = {'uid': uid, 'username': username, 'display_name': display_name}
