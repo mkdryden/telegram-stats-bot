@@ -29,7 +29,6 @@ import os
 import telegram
 from telegram.error import BadRequest
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, JobQueue
-from telegram.ext.dispatcher import run_async
 from telegram.update import Update
 import appdirs
 
@@ -88,7 +87,10 @@ def test_can_read_all_group_messages(context: CallbackContext):
         logger.error("Bot privacy is set to enabled, cannot log messages!!!")
 
 
-@run_async
+def update_usernames_wrapper(context: CallbackContext):
+    context.dispatcher.run_async(update_usernames, context)
+
+
 def update_usernames(context: CallbackContext):  # context.job.context contains the chat_id
     user_ids = stats.get_message_user_ids()
     db_users = stats.get_db_users()
@@ -117,7 +119,6 @@ def update_usernames(context: CallbackContext):  # context.job.context contains 
     logger.info("Usernames updated")
 
 
-@run_async
 def print_stats(update: Update, context: CallbackContext):
     if update.effective_user.id not in stats.users:
         return
@@ -205,7 +206,7 @@ if __name__ == '__main__':
     store = PostgresStore(args.postgres_url)
     stats = StatsRunner(store.engine)
 
-    stats_handler = CommandHandler('stats', print_stats, filters=~Filters.update.edited_message)
+    stats_handler = CommandHandler('stats', print_stats, filters=~Filters.update.edited_message, run_async=True)
     dispatcher.add_handler(stats_handler)
 
     chat_id_handler = CommandHandler('chatid', get_chatid, filters=~Filters.update.edited_message)
@@ -216,7 +217,8 @@ if __name__ == '__main__':
         dispatcher.add_handler(log_handler)
 
     job_queue: JobQueue = updater.job_queue
-    update_users_job = job_queue.run_repeating(update_usernames, interval=3600, first=0, context=args.chat_id)
+    update_users_job = job_queue.run_repeating(update_usernames_wrapper, interval=3600, first=5, context=args.chat_id)
     test_privacy_job = job_queue.run_once(test_can_read_all_group_messages, 0)
 
     updater.start_polling()
+    updater.idle()

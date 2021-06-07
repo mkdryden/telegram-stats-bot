@@ -7,10 +7,21 @@ The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
 ---------------------
+`Unreleased`_ - 2021-06-06
+---------------------
+Removed
+-------
+- Python 3.7 support removed
+
+Changed
+-------
+- Updated to python-telegram-bot 13.6
+
+---------------------
 `0.3.1`_ - 2020-12-31
 ---------------------
-Fixed
------
+Security
+--------
 - Bump crypography requirement to address security vulnerability
 
 ---------------------
@@ -48,3 +59,5 @@ Fixed
 .. _Unreleased: https://github.com/mkdryden/telegram-stats-bot/compare/v0.1.1...HEAD
 .. _0.1.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.1.1
 .. _0.2.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.2.0
+.. _0.3.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.3.0
+.. _0.3.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.3.1
