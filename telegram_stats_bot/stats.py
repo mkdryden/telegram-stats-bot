@@ -20,7 +20,7 @@
 # along with this program. If not, see [http://www.gnu.org/licenses/].
 
 import logging
-from typing import Dict, List, Tuple, Text, NoReturn
+from typing import Dict, List, Tuple, Text, NoReturn, Union
 from threading import Lock
 from io import BytesIO
 import argparse
@@ -133,19 +133,22 @@ class StatsRunner(object):
             with self.engine.connect() as con:
                 con.execute(query, sql_dict)
 
-    def get_chat_counts(self, n: int = 20, start: str = None, end: str = None) -> Tuple[str, None]:
+    def get_chat_counts(self, n: int = 20, lquery: str = None, start: str = None, end: str = None) -> Tuple[str, None]:
         """
         Get top chat users
+        :param lquery: Limit results to lexical query (&, |, !, <n>)
         :param n: Number of users to show
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         """
-        date_query = None
         sql_dict = {}
         query_conditions = []
 
         if n <= 0:
             raise HelpException(f'n must be greater than 0, got: {n}')
+
+        if lquery:
+            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -174,22 +177,29 @@ class StatsRunner(object):
         df = df.join(user_df)
         df['Percent'] = df['count'] / df['count'].sum() * 100
         df = df[['user', 'count', 'Percent']]
-        df.columns = ['User', 'Total Messages', 'Percent']
+        if lquery:
+            df.columns = ['User', lquery, 'Percent']
+        else:
+            df.columns = ['User', 'Total Messages', 'Percent']
         df['User'] = df['User'].str.replace(r'[^\x00-\x7F]', "", regex=True)  # Drop emoji
 
         text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
         return f"```\n{text}\n```", None
 
-    def get_counts_by_hour(self, user: Tuple[int, str] = None, start: str = None, end: str = None) \
-            -> Tuple[None, BytesIO]:
+    def get_counts_by_hour(self, user: Tuple[int, str] = None, lquery: str = None, start: str = None, end: str = None) \
+            -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
         Get plot of messages for hours of the day
+        :param lquery: Limit results to lexical query (&, |, !, <n>)
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         """
         query_conditions = []
         sql_dict = {}
+
+        if lquery:
+            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -218,6 +228,9 @@ class StatsRunner(object):
         with self.engine.connect() as con:
             df = pd.read_sql_query(query, con, params=sql_dict)
 
+        if len(df) == 0:
+            return "No matching messages", None
+
         df['day'] = pd.to_datetime(df.day)
         df['day'] = df.day.dt.tz_convert(self.tz)
         df = df.set_index('day')
@@ -245,9 +258,12 @@ class StatsRunner(object):
         subplot.axvspan(11.5, 23.5, zorder=0, color=(0, 0, 0, 0.05))
         subplot.set_xlim(-1, 24)  # Set explicitly to plot properly even with missing data
 
+        if lquery:
+            subplot.set_title(f"Messages by Hour for {lquery}")
+        elif user:
+            subplot.set_title(f"Messages by Hour for {user[1]}")
         if user:
             subplot.set_ylabel('Messages per Week')
-            subplot.set_title(f"Messages by Hour for {user[1]}")
         else:
             subplot.set_ylabel('Messages per Day')
             subplot.set_title("Messages by Hour")
@@ -261,16 +277,20 @@ class StatsRunner(object):
 
         return None, bio
 
-    def get_counts_by_day(self, user: Tuple[int, str] = None, start: str = None, end: str = None, plot: str = None) \
-            -> Tuple[None, BytesIO]:
+    def get_counts_by_day(self, user: Tuple[int, str] = None, lquery: str = None, start: str = None, end: str = None,
+                          plot: str = None) -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
         Get plot of messages for days of the week
+        :param lquery: Limit results to lexical query (&, |, !, <n>)
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param plot: Type of plot. ('box' or 'violin')
         """
         query_conditions = []
         sql_dict = {}
+
+        if lquery:
+            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -300,6 +320,9 @@ class StatsRunner(object):
         with self.engine.connect() as con:
             df = pd.read_sql_query(query, con, params=sql_dict)
 
+        if len(df) == 0:
+            return "No matching messages", None
+
         df['day'] = pd.to_datetime(df.day)
         df['day'] = df.day.dt.tz_convert(self.tz)
         df = df.set_index('day')
@@ -322,7 +345,10 @@ class StatsRunner(object):
         subplot.set_xlabel('')
         subplot.set_ylabel('Messages per Day')
         subplot.set_xlim(-0.5, 6.5)  # Need to set this explicitly to show full range of days with na data
-        if user:
+
+        if lquery:
+            subplot.set_title(f"Messages by Day of Week for {lquery}")
+        elif user:
             subplot.set_title(f"Messages by Day of Week for {user[1]}")
         else:
             subplot.set_title("Messages by Day of Week")
@@ -336,15 +362,19 @@ class StatsRunner(object):
 
         return None, bio
 
-    def get_week_by_hourday(self, user: Tuple[int, str] = None, start: str = None, end: str = None) \
-            -> Tuple[None, BytesIO]:
+    def get_week_by_hourday(self, lquery: str = None, user: Tuple[int, str] = None, start: str = None, end: str = None) \
+            -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
         Get plot of messages over the week by day and hour.
+        :param lquery: Limit results to lexical query (&, |, !, <n>)
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         """
         query_conditions = []
         sql_dict = {}
+
+        if lquery:
+            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -373,8 +403,11 @@ class StatsRunner(object):
         with self.engine.connect() as con:
             df = pd.read_sql_query(query, con, params=sql_dict)
 
+        if len(df) == 0:
+            return "No matching messages", None
+
         df['msg_time'] = pd.to_datetime(df.msg_time)
-        df['msg_time'] = df.msg_time.dt.tz_convert('America/Toronto')
+        df['msg_time'] = df.msg_time.dt.tz_convert(self.tz)
         df = df.set_index('msg_time')
         df = df.asfreq('h', fill_value=0)  # Fill periods with no messages
         df['dow'] = df.index.weekday
@@ -394,7 +427,9 @@ class StatsRunner(object):
         ax.tick_params(axis='y', rotation=0)
         ax.set_ylabel("")
         ax.set_xlabel("")
-        if user:
+        if lquery:
+            ax.set_title(f"Messages by day and hour for {lquery}")
+        elif user:
             ax.set_title(f"Total messages by day and hour for {user[1]}")
         else:
             ax.set_title("Total messages by day and hour")
@@ -408,7 +443,7 @@ class StatsRunner(object):
 
     def get_message_history(self, user: Tuple[int, str] = None, lquery: str = None, averages: int = None, start: str = None,
                             end: str = None) \
-            -> Tuple[None, BytesIO]:
+            -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
         Make a plot of message history over time
         :param lquery: Limit results to lexical query (&, |, !, <n>)
@@ -453,6 +488,10 @@ class StatsRunner(object):
 
         with self.engine.connect() as con:
             df = pd.read_sql_query(query, con, params=sql_dict)
+
+        if len(df) == 0:
+            return "No matching messages", None
+
         df['day'] = pd.to_datetime(df.day)
         df['day'] = df.day.dt.tz_convert(self.tz)
 
@@ -490,7 +529,7 @@ class StatsRunner(object):
         return None, bio
 
     def get_title_history(self, start: str = None, end: str = None, duration: bool = False) \
-            -> Tuple[None, BytesIO]:
+            -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
         Make a plot of group titles history over time
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
@@ -690,10 +729,11 @@ class StatsRunner(object):
 
         return f"**User Correlations for {escape_markdown(user[1])}**\n```\n{text}\n```", None
 
-    def get_message_deltas(self, start: str = None, end: str = None, n: int = 10, thresh: int = 500,
-                           autouser=None, **kwargs) -> Tuple[str, None]:
+    def get_message_deltas(self, lquery: str = None, start: str = None, end: str = None, n: int = 10, thresh: int = 500,
+                           autouser=None, **kwargs) -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
         Return the median difference in message time between you and other users.
+        :param lquery: Limit results to lexical query (&, |, !, <n>)
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param n: Show n highest and lowest correlation scores
@@ -702,6 +742,9 @@ class StatsRunner(object):
         user: Tuple[int, str] = kwargs['user']
         query_conditions = []
         sql_dict = {}
+
+        if lquery:
+            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -838,15 +881,19 @@ class StatsRunner(object):
         else:
             return f"**Messages by type:**\n```\n{text}\n```", None
 
-    def get_random_message(self, start: str = None, end: str = None,
+    def get_random_message(self, lquery: str = None, start: str = None, end: str = None,
                            user: Tuple[int, str] = None, **kwargs) -> Tuple[str, None]:
         """
         Display a random message.
+        :param lquery: Limit results to lexical query (&, |, !, <n>)
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         """
         query_conditions = []
         sql_dict = {}
+
+        if lquery:
+            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
 
         if user:
             sql_dict['user'] = user[0]
@@ -875,7 +922,10 @@ class StatsRunner(object):
 
         with self.engine.connect() as con:
             result = con.execute(query, sql_dict)
-        date, from_user, text = result.fetchall()[0]
+        try:
+            date, from_user, text = result.fetchall()[0]
+        except IndexError:
+            return "No matching messages", None
 
         return f"*On {escape_markdown(date.strftime('%Y-%m-%d'))}, {escape_markdown(self.users[from_user][0])}" \
                f" gave these words of wisdom:*\n" \

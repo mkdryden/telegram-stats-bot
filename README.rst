@@ -174,6 +174,10 @@ Nearly all have:
   range of data to fetch, otherwise all available data will be used.
   Either or both options can be given.
 
+- ``lsquery`` followed by a lexical query (using Postgres'
+  `tsquery syntax <https://www.postgresql.org/docs/12/datatype-textsearch.html#DATATYPE-TSQUERY>`_)
+  limits results to matching messages.
+
 - ``-me`` calculates statistics for the user sending the command, rather than all chat users.
 
 Sample outputs of each available subcommand follow.
@@ -216,9 +220,6 @@ week
 history
 -------
 ``/stats history`` returns a plot of messages versus date.
-Allows limiting by a lexical query (using Postgres'
-`tsquery syntax <https://www.postgresql.org/docs/12/datatype-textsearch.html#DATATYPE-TSQUERY>`_)
-with the ``lquery`` option.
 
 .. image:: examples/history.png
    :alt: Example of history plot
