@@ -46,6 +46,13 @@ def init_dbs(engine: Engine):
             type                    text
         );
         
+        alter table messages_utc
+                add column if not exists text_index_col tsvector
+                generated always as (to_tsvector('english', coalesce(text, ''))) stored;
+        
+        create index if not exists text_idx
+            on messages_utc using gin (text_index_col);
+        
         create index if not exists messages_utc_date_index
             on messages_utc (date);
         

@@ -216,6 +216,9 @@ week
 history
 -------
 ``/stats history`` returns a plot of messages versus date.
+Allows limiting by a lexical query (using Postgres'
+`tsquery syntax <https://www.postgresql.org/docs/12/datatype-textsearch.html#DATATYPE-TSQUERY>`_)
+with the ``lquery`` option.
 
 .. image:: examples/history.png
    :alt: Example of history plot

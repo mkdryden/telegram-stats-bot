@@ -406,11 +406,12 @@ class StatsRunner(object):
 
         return None, bio
 
-    def get_message_history(self, user: Tuple[int, str] = None, averages: int = None, start: str = None,
+    def get_message_history(self, user: Tuple[int, str] = None, lquery: str = None, averages: int = None, start: str = None,
                             end: str = None) \
             -> Tuple[None, BytesIO]:
         """
         Make a plot of message history over time
+        :param lquery: Limit results to lexical query (&, |, !, <n>)
         :param averages: Moving average width (in days)
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
@@ -421,6 +422,9 @@ class StatsRunner(object):
         if averages:
             if averages < 0:
                 raise HelpException("averages must be >= 0")
+
+        if lquery:
+            query_conditions.append(f"text_index_col @@ to_tsquery('{lquery}')")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -462,14 +466,16 @@ class StatsRunner(object):
         else:
             alpha = 1
 
-        fig = Figure()  # TODO: One day pandas will let you use constrained_layout=True here...
+        fig = Figure(constrained_layout=True)
         subplot = fig.subplots()
         df.plot(x='day', y='messages', alpha=alpha, legend=False, ax=subplot)
         if averages:
             df.plot(x='day', y='msg_rolling', legend=False, ax=subplot)
         subplot.set_ylabel("Messages")
         subplot.set_xlabel("Date")
-        if user:
+        if lquery:
+            subplot.set_title(f"History for query: {lquery}")
+        elif user:
             subplot.set_title(f"Message History for {user[1]}")
         else:
             subplot.set_title("Message History")
