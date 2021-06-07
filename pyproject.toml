@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "telegram-stats-bot"
-version = "0.3.1"
+version = "0.4.0"
 description = "A logging and statistics bot for Telegram based on python-telegram-bot."
 authors = ["Michael DM Dryden <mk.dryden@utoronto.ca>"]
 repository = "https://github.com/mkdryden/telegram-stats-bot"
