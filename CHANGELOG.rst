@@ -9,6 +9,10 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 ----------
 Unreleased
 ----------
+Added
+-----
+- Allow limiting counts by message type
+
 Fixed
 -----
 - Allow quotes in lquery parameters

@@ -133,10 +133,11 @@ class StatsRunner(object):
             with self.engine.connect() as con:
                 con.execute(query, sql_dict)
 
-    def get_chat_counts(self, n: int = 20, lquery: str = None, start: str = None, end: str = None) -> Tuple[str, None]:
+    def get_chat_counts(self, n: int = 20, lquery: str = None, mtype: str = None, start: str = None, end: str = None) -> Tuple[str, None]:
         """
         Get top chat users
         :param lquery: Limit results to lexical query (&, |, !, <n>)
+        :param mtype: Limit results to message type (text, sticker, photo, etc.)
         :param n: Number of users to show
         :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
         :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
@@ -149,6 +150,12 @@ class StatsRunner(object):
 
         if lquery:
             query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
+
+        if mtype:
+            if mtype not in ('text', 'sticker', 'photo', 'animation', 'video', 'voice', 'location', 'video_note',
+                             'audio', 'document', 'poll'):
+                raise HelpException(f'mtype {mtype} is invalid.')
+            query_conditions.append(f"""type = '{mtype}'""")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -177,11 +184,13 @@ class StatsRunner(object):
         df = df.join(user_df)
         df['Percent'] = df['count'] / df['count'].sum() * 100
         df = df[['user', 'count', 'Percent']]
-        if lquery:
-            df.columns = ['User', lquery, 'Percent']
+        if mtype:
+            df.columns = ['User', mtype, 'Percent']
+        elif lquery:
+            df.columns = ['User', 'lquery', 'Percent']
         else:
             df.columns = ['User', 'Total Messages', 'Percent']
-        df['User'] = df['User'].str.replace(r'[^\x00-\x7F]', "", regex=True)  # Drop emoji
+        df['User'] = df['User'].str.replace(r'[^\x00-\x7F]|[@]', "", regex=True)  # Drop emoji and @
 
         text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
