@@ -12,6 +12,7 @@ Unreleased
 Fixed
 -----
 - Allow quotes in lquery parameters
+- Zero-fill days without data for history
 
 ---------------------
 `0.4.0`_ - 2021-06-06

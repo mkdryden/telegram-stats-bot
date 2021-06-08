@@ -494,6 +494,8 @@ class StatsRunner(object):
 
         df['day'] = pd.to_datetime(df.day)
         df['day'] = df.day.dt.tz_convert(self.tz)
+        df = df.set_index('day')
+        df = df.resample('1D').sum()
 
         if averages is None:
             averages = len(df) // 20
@@ -507,9 +509,9 @@ class StatsRunner(object):
 
         fig = Figure(constrained_layout=True)
         subplot = fig.subplots()
-        df.plot(x='day', y='messages', alpha=alpha, legend=False, ax=subplot)
+        df.plot(y='messages', alpha=alpha, legend=False, ax=subplot)
         if averages:
-            df.plot(x='day', y='msg_rolling', legend=False, ax=subplot)
+            df.plot(y='msg_rolling', legend=False, ax=subplot)
         subplot.set_ylabel("Messages")
         subplot.set_xlabel("Date")
         if lquery:
