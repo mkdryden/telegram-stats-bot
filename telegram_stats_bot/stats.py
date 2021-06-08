@@ -938,7 +938,8 @@ class StatsRunner(object):
         except IndexError:
             return "No matching messages", None
 
-        return f"*On {escape_markdown(date.strftime('%Y-%m-%d'))}, {escape_markdown(self.users[from_user][0])}" \
+        return f"*On {escape_markdown(date.strftime('%Y-%m-%d'))}, " \
+               f"{escape_markdown(self.users[from_user][0]).lstrip('@')}" \
                f" gave these words of wisdom:*\n" \
                f"{escape_markdown(text)}\n",\
                None

@@ -15,6 +15,7 @@ Added
 
 Fixed
 -----
+- Remove @ from random message to avoid pinging users
 - Allow quotes in lquery parameters
 - Zero-fill days without data for history
 
