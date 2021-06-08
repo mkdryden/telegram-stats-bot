@@ -133,7 +133,8 @@ class StatsRunner(object):
             with self.engine.connect() as con:
                 con.execute(query, sql_dict)
 
-    def get_chat_counts(self, n: int = 20, lquery: str = None, mtype: str = None, start: str = None, end: str = None) -> Tuple[str, None]:
+    def get_chat_counts(self, n: int = 20, lquery: str = None, mtype: str = None, start: str = None, end: str = None)\
+            -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
         Get top chat users
         :param lquery: Limit results to lexical query (&, |, !, <n>)
@@ -178,6 +179,9 @@ class StatsRunner(object):
                 """
         with self.engine.connect() as con:
             df = pd.read_sql_query(query, con, params=sql_dict, index_col='from_user')
+
+        if len(df) == 0:
+            return "No matching messages", None
 
         user_df = pd.Series(self.users, name="user")
         user_df = user_df.apply(lambda x: x[0])  # Take only @usernames

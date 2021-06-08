@@ -18,6 +18,7 @@ Fixed
 - Remove @ from random message to avoid pinging users
 - Allow quotes in lquery parameters
 - Zero-fill days without data for history
+- Display error message if counts query empty
 
 ---------------------
 `0.4.0`_ - 2021-06-06
