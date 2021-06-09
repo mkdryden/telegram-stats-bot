@@ -174,7 +174,7 @@ Nearly all have:
   range of data to fetch, otherwise all available data will be used.
   Either or both options can be given.
 
-- ``lsquery`` followed by a lexical query (using Postgres'
+- ``-lquery`` followed by a lexical query (using Postgres'
   `tsquery syntax <https://www.postgresql.org/docs/12/datatype-textsearch.html#DATATYPE-TSQUERY>`_)
   limits results to matching messages.
 
