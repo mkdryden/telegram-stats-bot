@@ -34,8 +34,11 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.dates import date2num
 from sqlalchemy.engine import Engine
+from sqlalchemy import select, func
+from sqlalchemy.dialects import postgresql
 
-from .utils import escape_markdown
+from .utils import escape_markdown, TsStat, random_quote
+from .db import messages
 from . import __version__
 
 sns.set_context('paper')
@@ -77,6 +80,7 @@ class StatsRunner(object):
                        'corr': "get_user_correlation",
                        'delta': "get_message_deltas",
                        'types': "get_type_stats",
+                       'words': "get_word_stats",
                        'random': "get_random_message"}
 
     def __init__(self, engine: Engine, tz: str = 'America/Toronto'):
@@ -895,6 +899,53 @@ class StatsRunner(object):
             return f"**Messages by type, {escape_markdown(user[1])} vs group:**\n```\n{text}\n```", None
         else:
             return f"**Messages by type:**\n```\n{text}\n```", None
+
+    def get_word_stats(self, n: int = 4, limit: int = 20, start: str = None, end: str = None,
+                       user: Tuple[int, str] = None, **kwargs) -> Tuple[str, None]:
+        """
+        Print table of lexeme statistics.
+        :param n: Only consider lexemes with length of at least n
+        :param limit: Number of top lexemes to return
+        :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        """
+
+        q = select(messages.c['text_index_col'])
+
+        if user:
+            q = q.where(messages.c['from_user'] == user[0])
+        if start:
+            q = q.where(messages.c['date'] >= str(pd.to_datetime('2019')))
+        if end:
+            q = q.where(messages.c['date'] < str(pd.to_datetime('2019')))
+
+        q = q.scalar_subquery()
+        f = TsStat(q)
+        stmt = select([f.c['word'], f.c['ndoc'], f.c['nentry']]) \
+            .select_from(f)
+
+        if n:
+            stmt = stmt.where(func.length(f.c['word']) >= n)
+
+        stmt = stmt.order_by(f.c.nentry.desc(),
+                             f.c.ndoc.desc(),
+                             f.c.word)
+
+        if limit:
+            stmt = stmt.limit(limit)\
+                       .compile(dialect=postgresql.dialect())
+
+        with self.engine.connect() as con:
+            df = pd.read_sql_query(stmt, con)
+
+        df.columns = ['Lexeme', 'Messages', 'Uses']
+
+        text = df.to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
+
+        if user:
+            return f"**Most frequently used lexemes, {escape_markdown(user[1].lstrip('@'))}\n```\n{text}\n```", None
+        else:
+            return f"**Most frequently used lexemes, all users:**\n```\n{text}\n```", None
 
     def get_random_message(self, lquery: str = None, start: str = None, end: str = None,
                            user: Tuple[int, str] = None, **kwargs) -> Tuple[str, None]:

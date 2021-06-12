@@ -12,6 +12,7 @@ Unreleased
 Added
 -----
 - Allow limiting counts by message type
+- stats: Added words statistic
 
 Fixed
 -----

@@ -57,6 +57,8 @@ Table of contents
 
   - `types`_
 
+  - `words`_
+
   - `random`_
 
 - `License`_
@@ -285,6 +287,35 @@ types
        poll         29.0            0.0         1.0           0.0
    document          1.0            0.0         1.0           0.0
       Total     598640.0          100.0     16693.0         100.0
+
+words
+-----
+``/stats words`` returns a table of the most commonly used lexemes
+
+.. code::
+
+ Most frequently used lexemes:
+     Lexeme  Messages  Uses
+       like      1265  1334
+       well       753   765
+     actual       628   645
+       make       600   619
+       yeah       609   609
+       mean       544   553
+      thing       473   490
+     realli       472   482
+     though       467   470
+      peopl       415   445
+      think       425   433
+       know       403   409
+       need       396   408
+       time       371   389
+       want       354   371
+      would       345   366
+       much       345   357
+    probabl       348   356
+       even       331   338
+      stuff       318   332
 
 random
 ------

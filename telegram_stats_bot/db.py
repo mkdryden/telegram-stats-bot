@@ -21,10 +21,19 @@
 
 import logging
 
+from sqlalchemy import Column, Table, MetaData
 from sqlalchemy.engine import Engine
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.types import TIMESTAMP, BigInteger
 
 
 logger = logging.getLogger(__name__)
+
+metadata = MetaData()
+messages = Table('messages_utc', metadata,
+                 Column('date', TIMESTAMP),
+                 Column('from_user', BigInteger),
+                 Column('text_index_col', postgresql.TSVECTOR))
 
 
 def init_dbs(engine: Engine):
