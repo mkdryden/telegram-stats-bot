@@ -137,7 +137,7 @@ class StatsRunner(object):
             with self.engine.connect() as con:
                 con.execute(query, sql_dict)
 
-    def get_chat_counts(self, n: int = 20, lquery: str = None, mtype: str = None, start: str = None, end: str = None)\
+    def get_chat_counts(self, n: int = 20, lquery: str = None, mtype: str = None, start: str = None, end: str = None) \
             -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
         Get top chat users
@@ -154,7 +154,7 @@ class StatsRunner(object):
             raise HelpException(f'n must be greater than 0, got: {n}')
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
+            query_conditions.append(f"text_index_col @@ to_tsquery( {random_quote(lquery)} )")
 
         if mtype:
             if mtype not in ('text', 'sticker', 'photo', 'animation', 'video', 'voice', 'location', 'video_note',
@@ -216,7 +216,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
+            query_conditions.append(f"text_index_col @@ to_tsquery( {random_quote(lquery)} )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -307,7 +307,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
+            query_conditions.append(f"text_index_col @@ to_tsquery( {random_quote(lquery)} )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -391,7 +391,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
+            query_conditions.append(f"text_index_col @@ to_tsquery( {random_quote(lquery)} )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -458,7 +458,8 @@ class StatsRunner(object):
 
         return None, bio
 
-    def get_message_history(self, user: Tuple[int, str] = None, lquery: str = None, averages: int = None, start: str = None,
+    def get_message_history(self, user: Tuple[int, str] = None, lquery: str = None, averages: int = None,
+                            start: str = None,
                             end: str = None) \
             -> Tuple[Union[str, None], Union[None, BytesIO]]:
         """
@@ -476,7 +477,7 @@ class StatsRunner(object):
                 raise HelpException("averages must be >= 0")
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
+            query_conditions.append(f"text_index_col @@ to_tsquery( {random_quote(lquery)} )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -763,7 +764,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
+            query_conditions.append(f"text_index_col @@ to_tsquery( {random_quote(lquery)} )")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
@@ -959,7 +960,7 @@ class StatsRunner(object):
         sql_dict = {}
 
         if lquery:
-            query_conditions.append(f"text_index_col @@ to_tsquery( $${lquery}$$ )")
+            query_conditions.append(f"text_index_col @@ to_tsquery( {random_quote(lquery)} )")
 
         if user:
             sql_dict['user'] = user[0]
@@ -996,7 +997,7 @@ class StatsRunner(object):
         return f"*On {escape_markdown(date.strftime('%Y-%m-%d'))}, " \
                f"{escape_markdown(self.users[from_user][0]).lstrip('@')}" \
                f" gave these words of wisdom:*\n" \
-               f"{escape_markdown(text)}\n",\
+               f"{escape_markdown(text)}\n", \
                None
 
 

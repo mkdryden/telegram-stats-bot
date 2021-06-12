@@ -20,6 +20,7 @@ Fixed
 - Allow quotes in lquery parameters
 - Zero-fill days without data for history
 - Display error message if counts query empty
+- Use random dollarsign quoting to pass lquery parameter
 
 ---------------------
 `0.4.0`_ - 2021-06-06
