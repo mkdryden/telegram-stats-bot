@@ -12,6 +12,7 @@ Unreleased
 Added
 -----
 - Time zone support with ``--tz`` option
+- stats: user statistics
 
 ---------------------
 `0.5.0`_ - 2021-06-11

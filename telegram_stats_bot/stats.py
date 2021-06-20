@@ -77,6 +77,7 @@ class StatsRunner(object):
                        'week': "get_week_by_hourday",
                        'history': "get_message_history",
                        'titles': 'get_title_history',
+                       'user': 'get_user_summary',
                        'corr': "get_user_correlation",
                        'delta': "get_message_deltas",
                        'types': "get_type_stats",
@@ -645,6 +646,63 @@ class StatsRunner(object):
         bio.seek(0)
 
         return None, bio
+
+    def get_user_summary(self, autouser=None, **kwargs) -> Tuple[Union[str, None], Union[None, BytesIO]]:
+        """
+        Get summary of a user.
+        """
+        user: Tuple[int, str] = kwargs['user']
+        sql_dict = {'user': user[0]}
+
+        count_query = """
+                         SELECT COUNT(*)
+                         FROM "messages_utc"
+                         WHERE from_user = %(user)s;
+                      """
+
+        days_query = """
+                        SELECT EXTRACT(epoch FROM(NOW() - MIN(date))) / 86400 as "days"
+                        FROM "messages_utc"
+                        WHERE from_user = %(user)s;
+                     """
+
+        event_query = """
+                         SELECT date, event
+                         FROM user_events
+                         WHERE user_id = %(user)s
+                         ORDER BY "date";
+                      """
+
+        username_query = """
+                             SELECT COUNT(*)
+                             FROM "user_names"
+                             WHERE user_id = %(user)s;
+                         """
+
+        with self.engine.connect() as con:
+            result = con.execute(count_query, sql_dict)
+            msg_count: int = result.fetchall()[0][0]
+            result = con.execute(days_query, sql_dict)
+            days: float = result.fetchall()[0][0]
+            result = con.execute(event_query, sql_dict)
+            events: list = result.fetchall()
+            result = con.execute(username_query, sql_dict)
+            name_count: int = result.fetchall()[0][0]
+
+        event_text = '\n'.join([f'{event.event} on {pd.to_datetime(event.date).tz_convert(self.tz)}'
+                                for event in events])
+
+        # Add separator line
+        if event_text:
+            event_text = '\n' + event_text
+
+        text = f"Messages sent: {msg_count}\n" \
+               f"Average messages per day: {msg_count/days:.2f}\n" \
+               f"First message was {days:.2f} days ago.\n" \
+               f"Usernames on record: {name_count}\n" \
+               f"Average username lifetime: {days/name_count:.2f} days\n" + event_text
+
+        return f"User {user[1].lstrip('@')}: ```\n{text}\n```", None
 
     def get_user_correlation(self, start: str = None, end: str = None, agg: bool = True, c_type: str = None,
                              n: int = 5, thresh: float = 0.05, autouser=None, **kwargs) -> Tuple[str, None]:
