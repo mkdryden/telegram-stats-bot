@@ -51,6 +51,8 @@ Table of contents
 
   - `titles`_
 
+  - `user`_
+
   - `corr`_
 
   - `delta`_
@@ -247,6 +249,20 @@ titles
 
 .. image:: examples/titles.png
    :alt: Example of title history plot
+
+user
+----
+``/stats user`` returns basic statistics for the user.
+
+.. code-block::
+
+    Messages sent: 16711
+    Average messages per day: 12.31
+    First message was 1357.22 days ago.
+    Usernames on record: 3
+    Average username lifetime: 452.41 days
+
+    joined on 2017-10-01 16:11:08-04:00
 
 corr
 ----
