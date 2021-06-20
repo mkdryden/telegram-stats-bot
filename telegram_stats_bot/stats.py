@@ -83,7 +83,7 @@ class StatsRunner(object):
                        'words': "get_word_stats",
                        'random': "get_random_message"}
 
-    def __init__(self, engine: Engine, tz: str = 'America/Toronto'):
+    def __init__(self, engine: Engine, tz: str = 'Etc/UTC'):
         self.engine = engine
         self.tz = tz
 

@@ -199,6 +199,9 @@ if __name__ == '__main__':
     parser.add_argument('--json-path', type=str,
                         help="Either full path to backup storage folder or prefix (will be stored in app data dir.",
                         default="chat")
+    parser.add_argument('--tz', type=str,
+                        help="tz database time zone string, e.g. Europe/London",
+                        default='Etc/UTC')
     args = parser.parse_args()
 
     updater = Updater(token=args.token, use_context=True)
@@ -211,7 +214,7 @@ if __name__ == '__main__':
     os.makedirs(path, exist_ok=True)
     bak_store = JSONStore(path)
     store = PostgresStore(args.postgres_url)
-    stats = StatsRunner(store.engine)
+    stats = StatsRunner(store.engine, tz=args.tz)
 
     stats_handler = CommandHandler('stats', print_stats, filters=~Filters.update.edited_message, run_async=True)
     dispatcher.add_handler(stats_handler)

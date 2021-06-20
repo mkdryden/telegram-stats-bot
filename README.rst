@@ -140,14 +140,29 @@ Once installed, you can run the bot by calling the ``main`` module with a few re
 
     $ python -m telegram_stats_bot.main BOT_TOKEN CHAT_ID POSTGRESQL_URL
 
-- BOT_TOKEN: Your bot's token e.g., ``110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw``
+- ``BOT_TOKEN``: Your bot's token e.g., ``110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw``
 
-- CHAT_ID: The chat id to monitor (will be a large integer, possibly negative, if unknown, set to 0 and see below)
+- ``CHAT_ID``: The chat id to monitor (will be a large integer, possibly negative, if unknown, set to 0 and see below)
 
-- POSTGRESQL_URL: Connection information in the form: ``postgresql://USERNAME:PASSWORD@ADDRESS/DB_NAME``
+- ``POSTGRESQL_URL``: Connection information in the form: ``postgresql://USERNAME:PASSWORD@ADDRESS/DB_NAME``
 
   - if DB_NAME exists, there must not be tables called ``messages_utc``, ``user_events``, or ``user_names``
     with incorrect columns
+
+Two optional arguments exist as well:
+
+- ``json-path``: Specifying a path here will log messages to json files in addition to the database.
+  If only a prefix is specified, they will be saved under that prefix in your platform's preferred app data directory.
+  This was mostly for development purposes and is not necessary in normal use.
+
+- ``tz``: Specify a tz database time zone string here (e.g., ``America/New_York``) to return statistics queries in this time zone.
+  (Defaults to ``Etc./UTC``)
+
+A complete command might look like:
+
+.. code:: shell
+
+    $ python -m telegram_stats_bot.main --tz="America/Toronto" "110201543:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw" "postgresql://telegram:CoolPassword@localhost/telegram_bot"
 
 On startup, the bot will attempt to create the database and tables, if they do not already exist.
 If you do not know the chat's id and have set it to 0 as mentioned above, you can send the ``/chatid`` command inside
