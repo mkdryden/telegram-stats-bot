@@ -88,16 +88,16 @@ class StatsRunner(object):
         self.engine = engine
         self.tz = tz
 
-        self.users: Dict[int, Tuple[str, str]] = self._get_db_users()
+        self.users: Dict[int, Tuple[str, str]] = self.get_db_users()
         self.users_lock = Lock()
 
-    def _get_message_user_ids(self) -> List[int]:
+    def get_message_user_ids(self) -> List[int]:
         """Returns list of unique user ids from messages in database."""
         with self.engine.connect() as con:
             result = con.execute("SELECT DISTINCT from_user FROM messages_utc;")
         return [user for user, in result.fetchall()]
 
-    def _get_db_users(self) -> Dict[int, Tuple[str, str]]:
+    def get_db_users(self) -> Dict[int, Tuple[str, str]]:
         """Returns dictionary mapping user ids to usernames and full names."""
         query = """
         select user_id, username, display_name from (
@@ -116,7 +116,7 @@ class StatsRunner(object):
 
         return {user_id: (username, name) for user_id, username, name in result}
 
-    def _update_user_ids(self, user_dict: Dict[int, Tuple[str, str]]):
+    def update_user_ids(self, user_dict: Dict[int, Tuple[str, str]]):
         """
         Updates user names table with user_dict
         :param user_dict: mapping of user ids to (username, display name)
@@ -176,7 +176,7 @@ class StatsRunner(object):
             query_where = f"WHERE {' AND '.join(query_conditions)}"
 
         query = f"""
-                SELECT "from_user", COUNT(*)
+                SELECT "from_user", COUNT(*) as "count"
                 FROM "messages_utc"
                 {query_where}
                 GROUP BY "from_user"

@@ -92,8 +92,8 @@ def update_usernames_wrapper(context: CallbackContext):
 
 
 def update_usernames(context: CallbackContext):  # context.job.context contains the chat_id
-    user_ids = stats._get_message_user_ids()
-    db_users = stats._get_db_users()
+    user_ids = stats.get_message_user_ids()
+    db_users = stats.get_db_users()
     tg_users = {user_id: None for user_id in user_ids}
     to_update = {}
     for u_id in tg_users:
@@ -109,9 +109,9 @@ def update_usernames(context: CallbackContext):  # context.job.context contains 
             to_update[u_id] = tg_users[u_id]
         except BadRequest:  # Handle users no longer in chat or haven't messaged since bot joined
             logger.debug("Couldn't get user %s", u_id)  # debug level because will spam every hour
-    stats._update_user_ids(to_update)
+    stats.update_user_ids(to_update)
     if stats.users_lock.acquire(timeout=10):
-        stats.users = stats._get_db_users()
+        stats.users = stats.get_db_users()
         stats.users_lock.release()
     else:
         logger.warning("Couldn't acquire username lock.")
