@@ -5,7 +5,7 @@ services:
     # Uncomment to use local version
     # build:
       # context: .
-    image: mkdryden/telegram-stats-bot:latest
+    image: mkdryden/telegram-stats-bot:master
     depends_on:
       - db
     environment:
