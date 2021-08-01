@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  telegram-stats-bot:
+    # Uncomment to use local version
+    # build:
+      # context: .
+    image: mkdryden/telegram-stats-bot:latest
+    depends_on:
+      - db
+    environment:
+      TZ: "America/Toronto"
+      BOT_TOKEN: 111111111:AAA-MpBVQ7i2cIRfwedfsfesdg6webc0r-Y
+      CHAT_ID: 0
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST: db
+      POSTGRES_DB: telegram_bot
+  db:
+    image: postgres:12
+    restart: always
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: telegram_bot
+
+volumes:
+  db-data:

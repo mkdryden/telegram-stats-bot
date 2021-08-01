@@ -35,6 +35,8 @@ Table of contents
 
 - `Installation`_
 
+- `Docker`_
+
 - `Setup`_
 
 - `Fetching Stats`_
@@ -132,6 +134,13 @@ Or you can install the latest git version using `poetry <https://python-poetry.o
     $ poetry install
     
 Installing directly with ``setup.py`` should also work from the Pypi sdist (but why?).
+
+------
+Docker
+------
+
+A Docker image is available under ``mkdryden/telegram-stats-bot`` and a sample ``docker-compose.yml`` is in the root of the repository including database setup.
+Be sure to set the ``TZ``, ``BOT_TOKEN``, and ``CHAT_ID`` environment variable appropriately in your ``docker-run`` command or the ``docker-compose.yml`` file.
 
 -----
 Setup
