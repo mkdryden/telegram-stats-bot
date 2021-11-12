@@ -6,11 +6,17 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+----------
+`0.6.2`_ - 2021-11-11
+----------
+Changed
+-----
+- Switched build backend to poetry-core so that PEP 517 builds don't need full poetry install
 
 ----------
 `0.6.1`_ - 2021-11-07
 ----------
-Added
+Changed
 -----
 - Bumped pillow version to 8.3.2 for security reasons
 
@@ -102,3 +108,4 @@ Fixed
 .. _0.5.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.5.0
 .. _0.6.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.0
 .. _0.6.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.1
+.. _0.6.2: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.2
