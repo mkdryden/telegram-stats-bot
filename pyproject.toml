@@ -9,13 +9,13 @@ readme = "README.rst"
 include = ["examples/*", "CHANGELOG.rst"]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = ">=3.8,<3.11"
 python-telegram-bot = "^13.6"
 sqlalchemy = {version = "^1.4", extras = ["postgresql_psycopg2binary"]}
 SQLAlchemy-Utils = "0.37.6"
 pandas = "^1.0.4"
 seaborn = "^0.10.1"
-numpy = "^1.18.4"
+numpy = "^1.22.0"
 matplotlib = "^3.2.1"
 appdirs = "^1.4.4"
 single-source = "^0.2.0"
