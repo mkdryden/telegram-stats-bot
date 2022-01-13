@@ -9,6 +9,10 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 -------------
 `Unreleased`_
 -------------
+Changed
+-------
+- Titles plot uses seconds resolution with -duration option
+
 Fixed
 -----
 - Fix database creation code for immutable SQLAlchemy 1.4 URLs

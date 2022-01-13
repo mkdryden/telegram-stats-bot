@@ -604,7 +604,7 @@ class StatsRunner(object):
             df = df.reset_index(drop=True)
             df['idx'] = df.index
 
-            ax.barh(df.idx, df['diff'].dt.days, tick_label=df.new_chat_title)
+            ax.barh(df.idx, df['diff'].dt.days + df['diff'].dt.seconds/86400, tick_label=df.new_chat_title)
 
             ax.margins(0.2)
             ax.set_ylabel("")
