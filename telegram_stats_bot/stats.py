@@ -589,7 +589,7 @@ class StatsRunner(object):
         if end:
             last = pd.Timestamp(sql_dict['end_dt'], tz=self.tz).tz_convert('utc')
         else:
-            last = pd.Timestamp(datetime.now(), tz='utc')
+            last = pd.Timestamp(datetime.utcnow(), tz='utc')
 
         df_end = df['end']
         df_end.iloc[-1] = last

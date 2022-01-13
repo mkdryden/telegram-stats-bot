@@ -12,6 +12,7 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 Fixed
 -----
 - Fix database creation code for immutable SQLAlchemy 1.4 URLs
+- Titles plot considers time zone correctly for current time. (Prevents negative bars in titles plot with -duration option)
 
 ----------
 `0.6.2`_ - 2021-11-11
