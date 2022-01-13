@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`_,
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
+-------------
+`Unreleased`_
+-------------
+Fixed
+-----
+- Fix database creation code for immutable SQLAlchemy 1.4 URLs
+
 ----------
 `0.6.2`_ - 2021-11-11
 ----------
@@ -99,7 +106,7 @@ Fixed
 ----------------------
 - Initial release
 
-.. _Unreleased: https://github.com/mkdryden/telegram-stats-bot/compare/v0.6.1...HEAD
+.. _Unreleased: https://github.com/mkdryden/telegram-stats-bot/compare/v0.6.2...HEAD
 .. _0.1.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.1.1
 .. _0.2.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.2.0
 .. _0.3.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.3.0

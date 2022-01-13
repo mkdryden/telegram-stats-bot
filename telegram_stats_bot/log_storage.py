@@ -80,8 +80,7 @@ class PostgresStore(object):
                     TEMPLATE {quote(self.engine, 'template1')}
                     """
 
-            url = copy(self.engine.url)
-            url.database = 'postgres'
+            url = self.engine.url.set(database='postgres')
 
             engine = create_engine(url, echo=False, isolation_level="AUTOCOMMIT")
             result_proxy = engine.execute(text)
