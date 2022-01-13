@@ -7,7 +7,7 @@ The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
 -------------
-`Unreleased`_
+`0.6.3`_ - 2022-01-13
 -------------
 Changed
 -------
@@ -121,3 +121,4 @@ Fixed
 .. _0.6.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.0
 .. _0.6.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.1
 .. _0.6.2: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.2
+.. _0.6.3: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.3
