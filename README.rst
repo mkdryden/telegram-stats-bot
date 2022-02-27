@@ -126,14 +126,19 @@ The easiest way to install or upgrade is with pip:
 
     $ pip install telegram-stats-bot --upgrade
 
-Or you can install the latest git version using `poetry <https://python-poetry.org/>`_ (installed to Python 3.7 or later):
+This works directly from the git repository as well:
+
+.. code:: shell
+
+    $ pip install --upgrade git+https://github.com/mkdryden/telegram-stats-bot
+
+Or you can install an entire venv for development using `poetry <https://python-poetry.org/>`_:
 
 .. code:: shell
 
     $ git clone https://github.com/mkdryden/telegram-stats-bot.git
+    $ cd telegram-stats-bot
     $ poetry install
-    
-Installing directly with ``setup.py`` should also work from the Pypi sdist (but why?).
 
 ------
 Docker
