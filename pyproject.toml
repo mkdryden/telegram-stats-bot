@@ -10,7 +10,7 @@ include = ["examples/*", "CHANGELOG.rst"]
 
 [tool.poetry.dependencies]
 python = ">=3.8,<3.11"
-python-telegram-bot = "^13.6"
+python-telegram-bot = "^13.11"
 sqlalchemy = {version = "^1.4", extras = ["postgresql_psycopg2binary"]}
 SQLAlchemy-Utils = "0.37.6"
 pandas = "^1.0.4"
