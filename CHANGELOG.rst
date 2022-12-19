@@ -12,6 +12,7 @@ Unreleased
 Fixed
 -----
 - Sticker pack names save correctly now
+- Explicitly add psycopg2-binary as dependency because sqlalchemy extra doesn't seem to work anymore.
 
 Added
 -----
