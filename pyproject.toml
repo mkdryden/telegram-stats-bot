@@ -14,7 +14,7 @@ python-telegram-bot = "^13.11"
 sqlalchemy = {version = "^1.4", extras = ["postgresql_psycopg2binary"]}
 SQLAlchemy-Utils = "0.37.6"
 pandas = "^1.0.4"
-seaborn = "^0.10.1"
+seaborn = "^0.12"
 numpy = "^1.22.0"
 matplotlib = "^3.2.1"
 appdirs = "^1.4.4"
