@@ -74,8 +74,8 @@ def init_dbs(engine: Engine):
         create table if not exists user_events
         (
             message_id bigint,
-            user_id    bigint,
-            date       timestamp with time zone,
+            user_id    text,
+            date       timestamptz,
             event      text
         );
         

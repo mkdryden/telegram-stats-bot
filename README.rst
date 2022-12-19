@@ -39,6 +39,8 @@ Table of contents
 
 - `Setup`_
 
+- `Importing Data`_
+
 - `Fetching Stats`_
 
   - `counts`_
@@ -190,6 +192,26 @@ logged previously (and this list is only updated once an hour, so if you're impa
 you've sent a message to trigger the update).
 You can see if messages are being logged correctly by reviewing the terminal output.
 You should see a line like ``2020-06-04 02:08:39,212 - __main__ - INFO - 8``, whenever a message is logged.
+
+--------------
+Importing Data
+--------------
+Data can be imported from JSON dumps from the desktop client.
+Hit the three dot button from inside the desired group and select "Export chat history".
+Make sure you select JSON as the output format.
+You can also limit the date, as desired.
+The database will be updated and existing messages will remain, so you can use this feature to fill in gaps when the bot was not running.
+
+To import data, simply call:
+
+.. code:: shell
+
+    $ python -m telegram_stats_bot.json_dump_parser "/some/path/to/dump.json" "postgresql://telegram:CoolPassword@localhost/telegram_bot" --tz="America/Toronto"
+
+Where the first argument is the path to the json dump, the second is the db connection string, as above, and the optional `tz` argument should be the time zone of the system used to dump the json.
+
+This can be run without stopping a running bot, though it also attempts to set the user id to user name mapping, so will add an extra entry to every user in the dump (this currently only affects the user stats related to user name changes).
+Before you run this, make sure your db string is correct or you might accidentally mess up other databases on the same server.
 
 --------------
 Fetching Stats

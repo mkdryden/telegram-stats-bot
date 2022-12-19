@@ -19,6 +19,7 @@ numpy = "^1.22.0"
 matplotlib = "^3.2.1"
 appdirs = "^1.4.4"
 single-source = "^0.2.0"
+typer = "^0.7.0"
 
 [tool.poetry.dev-dependencies]
 

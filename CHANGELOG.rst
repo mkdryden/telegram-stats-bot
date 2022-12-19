@@ -13,6 +13,10 @@ Fixed
 -----
 - Sticker pack names save correctly now
 
+Added
+-----
+- Add script to import data from desktop client json dumps
+
 -------------
 `0.6.4`_ - 2022-02-27
 -------------

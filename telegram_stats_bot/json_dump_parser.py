@@ -23,6 +23,11 @@ import json
 import typing
 
 import pandas as pd
+import sqlalchemy.engine
+import typer
+from sqlalchemy import create_engine
+
+from .stats import StatsRunner
 
 media_dict = {'sticker': 'sticker',
               'animation': 'animation',
@@ -31,8 +36,8 @@ media_dict = {'sticker': 'sticker',
               'audio_file': 'audio',
               'video_message': 'video_note'}
 
-user_event_cat = pd.Categorical(['left', 'joined'])
-message_type_cat = pd.Categorical(['migrate_from_group', 'text', 'pinned_message', 'photo', 'sticker',
+user_event_cat = pd.CategoricalDtype(['left', 'joined'])
+message_type_cat = pd.CategoricalDtype(['migrate_from_group', 'text', 'pinned_message', 'photo', 'sticker',
                                    'new_chat_members', 'left_chat_member', 'animation', 'video',
                                    'location', 'new_chat_title', 'voice', 'audio',
                                    'new_chat_photo', 'video_note', 'poll'])
@@ -50,9 +55,10 @@ def text_list_parser(text: typing.Union[str, typing.Sequence]) -> str:
     return out
 
 
-def convert_messages(df: pd.DataFrame) -> typing.Tuple[typing.List[dict], typing.List[dict]]:
+def convert_messages(df: pd.DataFrame) -> typing.Tuple[typing.List[dict], typing.List[dict], dict]:
     messages_out = []
     users_out = []
+
     for message in df.itertuples():
         message_dict = {'message_id': message.id,
                         'date': message.date,
@@ -71,16 +77,18 @@ def convert_messages(df: pd.DataFrame) -> typing.Tuple[typing.List[dict], typing
         user_event_dict = {}
         if message.type == 'message':
             if pd.notnull(message.from_id):
-                message_dict['from_user'] = message.from_id
+                if not message.from_id.startswith('user'):
+                    continue
+                message_dict['from_user'] = int(message.from_id[4:])  # remove 'user' from id
 
             if pd.notnull(message.forwarded_from):
                 try:
-                    message_dict['forward_from'] = int(message.forwarded_from)
+                    message_dict['forward_from'] = int(message.from_id[4:])  # username is used in forwarded_from
                 except ValueError:
                     pass
 
             if pd.notnull(message.reply_to_message_id):
-                message_dict['reply_to_message'] = message.reply_to_message_id
+                message_dict['reply_to_message'] = int(message.reply_to_message_id)
 
             if pd.notnull(message.photo):
                 message_dict['type'] = 'photo'
@@ -97,12 +105,11 @@ def convert_messages(df: pd.DataFrame) -> typing.Tuple[typing.List[dict], typing
                 message_dict['text'] = text_list_parser(message.text)
             elif pd.notnull(message.poll):
                 message_dict['type'] = 'poll'
-            elif pd.notnull(message.location_information):
-                message_dict['type'] = 'location'
 
         elif message.type == 'service':
             if pd.notnull(message.actor_id):
-                message_dict['from_user'] = message.actor_id
+                if message.actor_id.startswith('user'):
+                    message_dict['from_user'] = int(message.actor_id[4:])
 
             if message.action == 'edit_group_title':
                 message_dict['type'] = 'new_chat_title'
@@ -118,12 +125,12 @@ def convert_messages(df: pd.DataFrame) -> typing.Tuple[typing.List[dict], typing
                         users_out.append({'message_id': message.id,
                                           'user_id': i,
                                           'date': message.date,
-                                          'event': 'join'})
+                                          'event': 'joined'})
                 except TypeError:
                     user_event_dict = {'message_id': message.id,
                                        'user_id': message.actor_id,
                                        'date': message.date,
-                                       'event': 'join'}
+                                       'event': 'joined'}
             elif message.action == 'remove_members':
                 message_dict['type'] = 'left_chat_member'
                 for i in message.members:
@@ -136,7 +143,15 @@ def convert_messages(df: pd.DataFrame) -> typing.Tuple[typing.List[dict], typing
         messages_out.append(message_dict)
         if user_event_dict != {}:
             users_out.append(user_event_dict)
-    return messages_out, users_out
+
+    user_map = {int(i[4:]): df.loc[df['from_id'] == i, 'from'].iloc[0]
+                for i in df['from_id'].unique()
+                if (df['from_id'] == i).any() and i.startswith('user')}
+
+    # Use long name for both name and long name since we can't fetch usernames
+    user_map = {k: (v, v) for k, v in user_map.items() if v}
+
+    return messages_out, users_out, user_map
 
 
 def parse_json(path: str):
@@ -144,3 +159,66 @@ def parse_json(path: str):
         js = json.load(f)
     chat = js['chats']['list'][1]['messages']
     df = pd.DataFrame(chat)
+
+
+def fix_dtypes_m(df: pd.DataFrame, tz: str) -> pd.DataFrame:
+    intcols = ['forward_from_message_id', 'forward_from', 'forward_from_chat',
+               'from_user', 'reply_to_message']
+    df_out = df.copy()
+    df_out.loc[:, intcols] = df_out.loc[:, intcols].astype('Int64')
+    df_out.loc[:, 'date'] = pd.to_datetime(df_out['date'], utc=False).dt.tz_localize(tz=tz,
+                                                                                     ambiguous=True)
+    df_out.loc[:, 'type'] = df_out.loc[:, 'type'].astype(message_type_cat)
+    return df_out.convert_dtypes()
+
+
+def fix_dtypes_u(df: pd.DataFrame, tz: str) -> pd.DataFrame:
+    df_out = df.copy()
+    df_out.loc[:, 'date'] = pd.to_datetime(df_out['date'], utc=False).dt.tz_localize(tz=tz,
+                                                                                     ambiguous=True)
+    df_out.loc[df_out.event == 'join', 'event'] = 'joined'
+    df_out['event'] = df_out.event.astype(user_event_cat)
+
+    return df_out.convert_dtypes()
+
+
+def update_user_list(users: dict[int, tuple[str, str]],  engine: sqlalchemy.engine.Engine, tz: str):
+    stats_runner = StatsRunner(engine, tz)
+    stats_runner.update_user_ids(users)
+
+
+def main(json_path: str, db_url: str, tz: str = 'Etc/UTC'):
+    """
+    Parse backup json file and update database with contents.
+    :param json_path:
+    :param db_url:
+    :param tz:
+    :return:
+    """
+    with open(json_path, encoding='utf-8') as f:
+        js = json.load(f)
+
+    chat = js['messages']
+    messages, users, user_map = convert_messages(pd.DataFrame(chat))
+
+    df_m = pd.DataFrame(messages).set_index('message_id')
+    df_m = fix_dtypes_m(df_m, tz)
+    df_u = pd.DataFrame(users).set_index('message_id')
+    df_u = fix_dtypes_u(df_u, tz)
+
+    engine = create_engine(db_url, echo=False)
+
+    # Exclude existing messages
+    m_ids = pd.read_sql_table('messages_utc', engine).message_id
+    df_m = df_m.loc[~df_m.index.isin(m_ids)]
+    m_ids = pd.read_sql_table('user_events', engine).message_id
+    df_u = df_u.loc[~df_u.index.isin(m_ids)]
+
+    df_u.to_sql('user_events', engine, if_exists='append')
+    df_m.to_sql('messages_utc', engine, if_exists='append')
+
+    update_user_list(user_map, engine, tz)
+
+
+if __name__ == '__main__':
+    typer.run(main)
