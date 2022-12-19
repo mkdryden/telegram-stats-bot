@@ -99,7 +99,7 @@ def parse_message(message: telegram.message.Message) -> Tuple[dict, List[dict]]:
     elif message.sticker:
         message_dict['type'] = 'sticker'
         message_dict['file_id'] = message.sticker.file_id
-        message_dict['sticker_set_name']: message.sticker.set_name
+        message_dict['sticker_set_name'] = message.sticker.set_name
     elif message.video:
         message_dict['type'] = 'video'
     elif message.video_note:
