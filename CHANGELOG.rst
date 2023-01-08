@@ -13,6 +13,7 @@ Fixed
 -----
 - Sticker pack names save correctly now
 - Explicitly add psycopg2-binary as dependency because sqlalchemy extra doesn't seem to work anymore.
+- Try to map user ids to names during json dump import. (#17)
 
 Added
 -----

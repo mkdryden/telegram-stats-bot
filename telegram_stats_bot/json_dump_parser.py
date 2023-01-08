@@ -186,7 +186,6 @@ def update_user_list(users: dict[int, tuple[str, str]],  engine: sqlalchemy.engi
     stats_runner = StatsRunner(engine, tz)
     stats_runner.update_user_ids(users)
 
-
 def main(json_path: str, db_url: str, tz: str = 'Etc/UTC'):
     """
     Parse backup json file and update database with contents.
@@ -211,10 +210,23 @@ def main(json_path: str, db_url: str, tz: str = 'Etc/UTC'):
     # Exclude existing messages
     m_ids = pd.read_sql_table('messages_utc', engine).message_id
     df_m = df_m.loc[~df_m.index.isin(m_ids)]
-    m_ids = pd.read_sql_table('user_events', engine).message_id
-    df_u = df_u.loc[~df_u.index.isin(m_ids)]
 
-    df_u.to_sql('user_events', engine, if_exists='append')
+    # Map usernames back to numeric ids
+    inverse_user_map = pd.DataFrame(user_map).T.reset_index()
+    df_u = df_u.reset_index().merge(inverse_user_map, how='inner', left_on='user_id', right_on=0) \
+               .loc[:, ['index', 'message_id', 'date', 'event']] \
+               .rename(columns={'index': 'user_id'}) \
+               .set_index('message_id', drop=True)
+
+    # Merge existing user events
+    m_ids = pd.read_sql_table('user_events', engine).set_index('message_id')
+    df_u['user_id'] = df_u['user_id'].astype('Int64')
+    merged = df_u.merge(m_ids, how='outer', left_index=True, right_index=True, suffixes=('', 'y'))
+    merged['user_idy'] = pd.to_numeric(merged['user_idy'], errors='coerce').astype('Int64')  # Keep existing valid IDs
+    merged['user_id'] = merged['user_id'].fillna(merged['user_idy'])
+    df_u = merged.loc[:, ['user_id', 'date', 'event']].dropna(how='any')
+
+    df_u.to_sql('user_events', engine, if_exists='replace')  # Contains possible updates to existing values
     df_m.to_sql('messages_utc', engine, if_exists='append')
 
     update_user_list(user_map, engine, tz)
