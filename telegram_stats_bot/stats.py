@@ -72,6 +72,7 @@ class InternalParser(argparse.ArgumentParser):
 
 class StatsRunner(object):
     allowed_methods = {'counts': "get_chat_counts",
+                       'count-dist': 'get_chat_ecdf',
                        'hours': "get_counts_by_hour",
                        'days': "get_counts_by_day",
                        'week': "get_week_by_hourday",
@@ -204,6 +205,75 @@ class StatsRunner(object):
         text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
         return f"```\n{text}\n```", None
+
+    def get_chat_ecdf(self, lquery: str = None, mtype: str = None, start: str = None, end: str = None,
+                      log: bool = False) -> Tuple[Union[str, None], Union[None, BytesIO]]:
+        """
+        Get message counts by number of users as an ECDF plot.
+        :param lquery: Limit results to lexical query (&, |, !, <n>)
+        :param mtype: Limit results to message type (text, sticker, photo, etc.)
+        :param start: Start timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param end: End timestamp (e.g. 2019, 2019-01, 2019-01-01, "2019-01-01 14:21")
+        :param log: Plot with log scale.
+        """
+        sql_dict = {}
+        query_conditions = []
+
+        if lquery:
+            query_conditions.append(f"text_index_col @@ to_tsquery( {random_quote(lquery)} )")
+
+        if mtype:
+            if mtype not in ('text', 'sticker', 'photo', 'animation', 'video', 'voice', 'location', 'video_note',
+                             'audio', 'document', 'poll'):
+                raise HelpException(f'mtype {mtype} is invalid.')
+            query_conditions.append(f"""type = '{mtype}'""")
+
+        if start:
+            sql_dict['start_dt'] = pd.to_datetime(start)
+            query_conditions.append("date >= %(start_dt)s")
+
+        if end:
+            sql_dict['end_dt'] = pd.to_datetime(end)
+            query_conditions.append("date < %(end_dt)s")
+
+        query_where = ""
+        if query_conditions:
+            query_where = f"WHERE {' AND '.join(query_conditions)}"
+
+        query = f"""
+                SELECT "from_user", COUNT(*) as "count"
+                FROM "messages_utc"
+                {query_where}
+                GROUP BY "from_user"
+                ORDER BY "count" DESC;
+                """
+
+        with self.engine.connect() as con:
+            df = pd.read_sql_query(query, con, params=sql_dict)
+
+        if len(df) == 0:
+            return "No matching messages", None
+
+        fig = Figure(constrained_layout=True)
+        subplot = fig.subplots()
+
+        sns.ecdfplot(df, y='count', stat='count', log_scale=log, ax=subplot)
+        subplot.set_xlabel('User')
+        subplot.set_ylabel('Messages')
+
+        if lquery:
+            subplot.set_title(f"Messages by User for {lquery}")
+        else:
+            subplot.set_title("Messages by User")
+
+        sns.despine(fig=fig)
+
+        bio = BytesIO()
+        bio.name = 'plot.png'
+        fig.savefig(bio, bbox_inches='tight')
+        bio.seek(0)
+
+        return None, bio
 
     def get_counts_by_hour(self, user: Tuple[int, str] = None, lquery: str = None, start: str = None, end: str = None) \
             -> Tuple[Union[str, None], Union[None, BytesIO]]:

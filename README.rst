@@ -45,6 +45,8 @@ Table of contents
 
   - `counts`_
 
+  - `count-dist`_
+
   - `hours`_
 
   - `days`_
@@ -250,6 +252,13 @@ counts
             @AAAAAAA           32134      5.4
   @WhereAreMyManners           30481      5.1
   @TheWorstOfTheBest           28705      4.8
+
+count-dist
+----------
+``/stats count-dist`` returns an ECDF plot of the users in the group by message count.
+
+.. image:: examples/count-dist.png
+   :alt: Example of count-dist plot
 
 hours
 -----

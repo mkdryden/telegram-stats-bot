@@ -7,17 +7,18 @@ The format is based on `Keep a Changelog <https://keepachangelog.com/en/1.0.0/>`
 and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0.html>`_.
 
 ----------
-Unreleased
+`0.7.0`_ - 2023-01-14
 ----------
 Fixed
 -----
 - Sticker pack names save correctly now
-- Explicitly add psycopg2-binary as dependency because sqlalchemy extra doesn't seem to work anymore.
+- Explicitly add psycopg2-binary as dependency because sqlalchemy extra doesn't seem to work anymore
 - Try to map user ids to names during json dump import. (#17)
 
 Added
 -----
 - Add script to import data from desktop client json dumps
+- Add ECDF plot for message counts by user with ``/stats count-dist``
 
 -------------
 `0.6.4`_ - 2022-02-27
@@ -131,7 +132,7 @@ Fixed
 ----------------------
 - Initial release
 
-.. _Unreleased: https://github.com/mkdryden/telegram-stats-bot/compare/v0.6.2...HEAD
+.. _Unreleased: https://github.com/mkdryden/telegram-stats-bot/compare/v0.7.0...HEAD
 .. _0.1.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.1.1
 .. _0.2.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.2.0
 .. _0.3.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.3.0
@@ -142,3 +143,4 @@ Fixed
 .. _0.6.1: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.1
 .. _0.6.2: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.2
 .. _0.6.3: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.6.3
+.. _0.7.0: https://github.com/mkdryden/telegram-stats-bot/releases/tag/v0.7.0
