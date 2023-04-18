@@ -199,7 +199,7 @@ class StatsRunner(object):
         elif lquery:
             df.columns = ['User', 'lquery', 'Percent']
         else:
-            df.columns = ['User', 'Total Messages', 'Percent']
+            df.columns = ['User', 'Messages', '%']
         df['User'] = df['User'].str.replace(r'[^\x00-\x7F]|[@]', "", regex=True)  # Drop emoji and @
 
         text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
