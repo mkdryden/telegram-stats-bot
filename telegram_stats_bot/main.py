@@ -28,19 +28,21 @@ import os
 
 import telegram
 from telegram.error import BadRequest
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext, JobQueue
-from telegram.update import Update
+from telegram.ext import Updater, CommandHandler, MessageHandler, CallbackContext, JobQueue, ContextTypes, Application, \
+    filters
+from telegram import Update
 import appdirs
 
 from .parse import parse_message
 from .log_storage import JSONStore, PostgresStore
 from .stats import StatsRunner, get_parser, HelpException
 
-
 warnings.filterwarnings("ignore")
 
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
                     level=logging.INFO)
+logging.getLogger('httpx').setLevel(logging.WARNING)  # Mute normal http requests
+
 logger = logging.getLogger(__name__)
 
 stats = None
@@ -54,7 +56,7 @@ sticker_idx = None
 sticker_id = None
 
 
-def log_message(update: Update, context: CallbackContext):
+async def log_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if update.edited_message:
         edited_message, user = parse_message(update.effective_message)
         if bak_store:
@@ -79,28 +81,25 @@ def log_message(update: Update, context: CallbackContext):
                 store.append_data('user_events', i)
 
 
-def get_chatid(update: Update, context: CallbackContext):
-    context.bot.send_message(chat_id=update.effective_chat.id,
-                             text=f"Chat id: {update.effective_chat.id}")
+async def get_chatid(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text(text=f"Chat id: {update.effective_chat.id}")
 
 
-def test_can_read_all_group_messages(context: CallbackContext):
+async def test_can_read_all_group_messages(context: CallbackContext):
     if not context.bot.can_read_all_group_messages:
         logger.error("Bot privacy is set to enabled, cannot log messages!!!")
 
 
-def update_usernames_wrapper(context: CallbackContext):
-    context.dispatcher.run_async(update_usernames, context)
-
-
-def update_usernames(context: CallbackContext):  # context.job.context contains the chat_id
+async def update_usernames(context: ContextTypes.DEFAULT_TYPE):  # context.job.context contains the chat_id
     user_ids = stats.get_message_user_ids()
     db_users = stats.get_db_users()
     tg_users = {user_id: None for user_id in user_ids}
     to_update = {}
     for u_id in tg_users:
         try:
-            user = context.bot.get_chat_member(chat_id=context.job.context, user_id=u_id).user
+            chat_member: telegram.ChatMember = await context.bot.get_chat_member(chat_id=context.job.chat_id,
+                                                                                 user_id=u_id)
+            user = chat_member.user
             tg_users[u_id] = user.name, user.full_name
             if tg_users[u_id] != db_users[u_id]:
                 if tg_users[u_id][1] == db_users[u_id][1]:  # Flag these so we don't insert new row
@@ -121,7 +120,7 @@ def update_usernames(context: CallbackContext):  # context.job.context contains 
     logger.info("Usernames updated")
 
 
-def print_stats(update: Update, context: CallbackContext):
+async def print_stats(update: Update, context: CallbackContext):
     if update.effective_user.id not in stats.users:
         return
 
@@ -132,11 +131,11 @@ def print_stats(update: Update, context: CallbackContext):
         ns = stats_parser.parse_args(shlex.split(" ".join(context.args)))
     except HelpException as e:
         text = e.msg
-        send_help(text, context, update)
+        await send_help(text, context, update)
         return
     except argparse.ArgumentError as e:
         text = str(e)
-        send_help(text, context, update)
+        await send_help(text, context, update)
         return
     else:
         args = vars(ns)
@@ -148,7 +147,7 @@ def print_stats(update: Update, context: CallbackContext):
                     uid = args['user']
                     args['user'] = uid, stats.users[uid][0]
                 except KeyError:
-                    send_help("unknown userid", context, update)
+                    await send_help("unknown userid", context, update)
                     return
         except KeyError:
             pass
@@ -164,18 +163,18 @@ def print_stats(update: Update, context: CallbackContext):
             text, image = func(**args)
         except HelpException as e:
             text = e.msg
-            send_help(text, context, update)
+            await send_help(text, context, update)
             return
 
     if text:
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text=text,
-                                 parse_mode=telegram.ParseMode.MARKDOWN_V2)
+        await update.message.reply_text(text=text,
+                                        parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
+
     if image:
-        context.bot.send_photo(chat_id=update.effective_chat.id, photo=image)
+        await update.message.reply_photo(photo=image)
 
 
-def send_help(text: str, context: CallbackContext, update: Update):
+async def send_help(text: str, context: CallbackContext, update: Update):
     """
     Send help text to user. Tries to send a direct message if possible.
     :param text: text to send
@@ -184,13 +183,12 @@ def send_help(text: str, context: CallbackContext, update: Update):
     :return:
     """
     try:
-        context.bot.send_message(chat_id=update.effective_user.id,
-                                 text=f"```\n{text}\n```",
-                                 parse_mode=telegram.ParseMode.MARKDOWN_V2)
-    except telegram.error.Unauthorized:  # If user has never chatted with bot
-        context.bot.send_message(chat_id=update.effective_chat.id,
-                                 text=f"```\n{text}\n```",
-                                 parse_mode=telegram.ParseMode.MARKDOWN_V2)
+        await context.bot.send_message(chat_id=update.effective_user.id,
+                                       text=f"```\n{text}\n```",
+                                       parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
+    except telegram.error.Forbidden:  # If user has never chatted with bot
+        await update.message.reply_text(text=f"```\n{text}\n```",
+                                        parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
 
 
 if __name__ == '__main__':
@@ -206,8 +204,7 @@ if __name__ == '__main__':
                         default='Etc/UTC')
     args = parser.parse_args()
 
-    updater = Updater(token=args.token, use_context=True)
-    dispatcher = updater.dispatcher
+    application = Application.builder().token(args.token).build()
 
     if args.json_path:
         path = args.json_path
@@ -221,19 +218,18 @@ if __name__ == '__main__':
     store = PostgresStore(args.postgres_url)
     stats = StatsRunner(store.engine, tz=args.tz)
 
-    stats_handler = CommandHandler('stats', print_stats, filters=~Filters.update.edited_message, run_async=True)
-    dispatcher.add_handler(stats_handler)
+    stats_handler = CommandHandler('stats', print_stats)
+    application.add_handler(stats_handler)
 
-    chat_id_handler = CommandHandler('chatid', get_chatid, filters=~Filters.update.edited_message)
-    dispatcher.add_handler(chat_id_handler)
+    chat_id_handler = CommandHandler('chatid', get_chatid, filters=~filters.UpdateType.EDITED)
+    application.add_handler(chat_id_handler)
 
     if args.chat_id != 0:
-        log_handler = MessageHandler(Filters.chat(chat_id=args.chat_id), log_message)
-        dispatcher.add_handler(log_handler)
+        log_handler = MessageHandler(filters.Chat(chat_id=args.chat_id), log_message)
+        application.add_handler(log_handler)
 
-    job_queue: JobQueue = updater.job_queue
-    update_users_job = job_queue.run_repeating(update_usernames_wrapper, interval=3600, first=5, context=args.chat_id)
+    job_queue = application.job_queue
+    update_users_job = job_queue.run_repeating(update_usernames, interval=3600, first=5, chat_id=args.chat_id)
     test_privacy_job = job_queue.run_once(test_can_read_all_group_messages, 0)
 
-    updater.start_polling()
-    updater.idle()
+    application.run_polling()

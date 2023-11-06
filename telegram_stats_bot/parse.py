@@ -48,7 +48,7 @@ class MessageDict(TypedDict):
     type: str
 
 
-def parse_message(message: telegram.message.Message) -> Tuple[dict, List[dict]]:
+def parse_message(message: telegram.Message) -> Tuple[dict, List[dict]]:
     message_dict: MessageDict = {'message_id': message.message_id,
                                  'date': message.date,
                                  'from_user': None,
