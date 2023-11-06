@@ -57,7 +57,8 @@ sticker_id = None
 def log_message(update: Update, context: CallbackContext):
     if update.edited_message:
         edited_message, user = parse_message(update.effective_message)
-        bak_store.append_data('edited-messages', edited_message)
+        if bak_store:
+            bak_store.append_data('edited-messages', edited_message)
         store.update_data('messages', edited_message)
         return
 
@@ -68,7 +69,8 @@ def log_message(update: Update, context: CallbackContext):
     message, user = parse_message(update.effective_message)
 
     if message:
-        bak_store.append_data('messages', message)
+        if bak_store:
+            bak_store.append_data('messages', message)
         store.append_data('messages', message)
     if len(user) > 0:
         for i in user:
@@ -198,7 +200,7 @@ if __name__ == '__main__':
     parser.add_argument('postgres_url', type=str, help="Sqlalchemy-compatible postgresql url.")
     parser.add_argument('--json-path', type=str,
                         help="Either full path to backup storage folder or prefix (will be stored in app data dir.",
-                        default="chat")
+                        default="")
     parser.add_argument('--tz', type=str,
                         help="tz database time zone string, e.g. Europe/London",
                         default='Etc/UTC')
@@ -207,12 +209,15 @@ if __name__ == '__main__':
     updater = Updater(token=args.token, use_context=True)
     dispatcher = updater.dispatcher
 
-    path = args.json_path
-    if not os.path.split(path)[0]:  # Empty string for left part of path
-        path = os.path.join(appdirs.user_data_dir('telegram-stats-bot'), path)
+    if args.json_path:
+        path = args.json_path
+        if not os.path.split(path)[0]:  # Empty string for left part of path
+            path = os.path.join(appdirs.user_data_dir('telegram-stats-bot'), path)
 
-    os.makedirs(path, exist_ok=True)
-    bak_store = JSONStore(path)
+        os.makedirs(path, exist_ok=True)
+        bak_store = JSONStore(path)
+    else:
+        bak_store = None
     store = PostgresStore(args.postgres_url)
     stats = StatsRunner(store.engine, tz=args.tz)
 
