@@ -12,6 +12,7 @@ Unreleased
 Changed
 -------
 - Upgraded python-telegram-bot to version 20
+- Reply to edited messages
 
 ----------
 `0.7.0`_ - 2023-01-14

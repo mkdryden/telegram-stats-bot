@@ -167,11 +167,12 @@ async def print_stats(update: Update, context: CallbackContext):
             return
 
     if text:
-        await update.message.reply_text(text=text,
-                                        parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
+        await update.effective_message.reply_text(text=text,
+                                                  parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
 
     if image:
-        await update.message.reply_photo(photo=image)
+        await update.effective_message.reply_photo(caption='`' + " ".join(context.args) + '`', photo=image,
+                                                   parse_mode=telegram.constants.ParseMode.MARKDOWN_V2)
 
 
 async def send_help(text: str, context: CallbackContext, update: Update):
