@@ -14,6 +14,10 @@ Changed
 - Upgraded python-telegram-bot to version 20
 - Reply to edited messages
 
+Fixed
+-----
+- Date selection for word statistics was broken
+
 ----------
 `0.7.0`_ - 2023-01-14
 ----------

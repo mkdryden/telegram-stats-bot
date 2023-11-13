@@ -1044,9 +1044,9 @@ class StatsRunner(object):
         if user:
             q = q.where(messages.c['from_user'] == user[0])
         if start:
-            q = q.where(messages.c['date'] >= str(pd.to_datetime('2019')))
+            q = q.where(messages.c['date'] >= str(pd.to_datetime(start)))
         if end:
-            q = q.where(messages.c['date'] < str(pd.to_datetime('2019')))
+            q = q.where(messages.c['date'] < str(pd.to_datetime(end)))
 
         q = q.scalar_subquery()
         f = TsStat(q)
