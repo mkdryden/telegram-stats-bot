@@ -21,7 +21,7 @@
 
 import logging
 
-from sqlalchemy import Column, Table, MetaData
+from sqlalchemy import Column, Table, MetaData, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.types import TIMESTAMP, BigInteger
@@ -96,4 +96,4 @@ def init_dbs(engine: Engine):
         """
 
     with engine.connect() as con:
-        con.execute(sql)
+        con.execute(text(sql))

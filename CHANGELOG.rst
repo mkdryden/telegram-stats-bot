@@ -13,6 +13,9 @@ Changed
 -------
 - Upgraded python-telegram-bot to version 20
 - Reply to edited messages
+- Updated to SQLAlchemy 2.0
+- Updated to pandas 2.1
+- Updated other dependencies
 
 Fixed
 -----

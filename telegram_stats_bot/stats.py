@@ -34,7 +34,7 @@ import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.dates import date2num
 from sqlalchemy.engine import Engine
-from sqlalchemy import select, func
+from sqlalchemy import select, func, text
 from sqlalchemy.dialects import postgresql
 
 from .utils import escape_markdown, TsStat, random_quote
@@ -45,7 +45,16 @@ sns.set_context('paper')
 sns.set_style('whitegrid')
 sns.set_palette("Set2")
 
+logging.getLogger('matplotlib').setLevel(logging.WARNING)  # Mute matplotlib debug messages
 logger = logging.getLogger()
+
+
+def output_fig(fig: Figure) -> BytesIO:
+    bio = BytesIO()
+    bio.name = 'plot.png'
+    fig.savefig(bio, bbox_inches='tight', dpi=200, format='png')
+    bio.seek(0)
+    return bio
 
 
 class HelpException(Exception):
@@ -95,7 +104,7 @@ class StatsRunner(object):
     def get_message_user_ids(self) -> List[int]:
         """Returns list of unique user ids from messages in database."""
         with self.engine.connect() as con:
-            result = con.execute("SELECT DISTINCT from_user FROM messages_utc;")
+            result = con.execute(text("SELECT DISTINCT from_user FROM messages_utc;"))
         return [user for user, in result.fetchall()]
 
     def get_db_users(self) -> Dict[int, Tuple[str, str]]:
@@ -112,7 +121,7 @@ class StatsRunner(object):
         """
 
         with self.engine.connect() as con:
-            result = con.execute(query)
+            result = con.execute(text(query))
         result = result.fetchall()
 
         return {user_id: (username, name) for user_id, username, name in result}
@@ -126,18 +135,18 @@ class StatsRunner(object):
             username, display_name = user_dict[uid]
             sql_dict = {'uid': uid, 'username': username, 'display_name': display_name}
             query = """
-            UPDATE user_names
-            SET username = %(username)s
-            WHERE user_id = %(uid)s AND username IS DISTINCT FROM %(username)s;
+                UPDATE user_names
+                SET username = :username
+                WHERE user_id = :uid AND username IS DISTINCT FROM :username;
             """
             if display_name:
                 query += """\n
                          INSERT INTO user_names(user_id, date, username, display_name)
-                             VALUES (%(uid)s, current_timestamp, %(username)s, %(display_name)s);
+                             VALUES (:uid, current_timestamp, :username, :display_name);
                          """
 
             with self.engine.connect() as con:
-                con.execute(query, sql_dict)
+                con.execute(text(query), sql_dict)
 
     def get_chat_counts(self, n: int = 20, lquery: str = None, mtype: str = None, start: str = None, end: str = None) \
             -> Tuple[Union[str, None], Union[None, BytesIO]]:
@@ -166,25 +175,25 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         query_where = ""
         if query_conditions:
             query_where = f"WHERE {' AND '.join(query_conditions)}"
 
         query = f"""
-                SELECT "from_user", COUNT(*) as "count"
-                FROM "messages_utc"
-                {query_where}
-                GROUP BY "from_user"
-                ORDER BY "count" DESC;
+                    SELECT "from_user", COUNT(*) as "count"
+                    FROM "messages_utc"
+                    {query_where}
+                    GROUP BY "from_user"
+                    ORDER BY "count" DESC;
                 """
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict, index_col='from_user')
+            df = pd.read_sql_query(text(query), con, params=sql_dict, index_col='from_user')
 
         if len(df) == 0:
             return "No matching messages", None
@@ -202,9 +211,9 @@ class StatsRunner(object):
             df.columns = ['User', 'Total Messages', 'Percent']
         df['User'] = df['User'].str.replace(r'[^\x00-\x7F]|[@]', "", regex=True)  # Drop emoji and @
 
-        text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
+        out_text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
-        return f"```\n{text}\n```", None
+        return f"```\n{out_text}\n```", None
 
     def get_chat_ecdf(self, lquery: str = None, mtype: str = None, start: str = None, end: str = None,
                       log: bool = False) -> Tuple[Union[str, None], Union[None, BytesIO]]:
@@ -230,26 +239,26 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         query_where = ""
         if query_conditions:
             query_where = f"WHERE {' AND '.join(query_conditions)}"
 
         query = f"""
-                SELECT "from_user", COUNT(*) as "count"
-                FROM "messages_utc"
-                {query_where}
-                GROUP BY "from_user"
-                ORDER BY "count" DESC;
+                    SELECT "from_user", COUNT(*) as "count"
+                    FROM "messages_utc"
+                    {query_where}
+                    GROUP BY "from_user"
+                    ORDER BY "count" DESC;
                 """
 
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict)
+            df = pd.read_sql_query(text(query), con, params=sql_dict)
 
         if len(df) == 0:
             return "No matching messages", None
@@ -268,10 +277,7 @@ class StatsRunner(object):
 
         sns.despine(fig=fig)
 
-        bio = BytesIO()
-        bio.name = 'plot.png'
-        fig.savefig(bio, bbox_inches='tight')
-        bio.seek(0)
+        bio = output_fig(fig)
 
         return None, bio
 
@@ -291,15 +297,15 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         if user:
             sql_dict['user'] = user[0]
-            query_conditions.append("from_user = %(user)s")
+            query_conditions.append("from_user = :user")
 
         query_where = ""
         if query_conditions:
@@ -314,7 +320,7 @@ class StatsRunner(object):
                  """
 
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict)
+            df = pd.read_sql_query(text(query), con, params=sql_dict)
 
         if len(df) == 0:
             return "No matching messages", None
@@ -337,10 +343,12 @@ class StatsRunner(object):
         fig = Figure(constrained_layout=True)
         subplot = fig.subplots()
 
-        sns.stripplot(x='hour', y='messages', data=df, jitter=.4, size=2, ax=subplot, alpha=.5, zorder=0)
-        sns.boxplot(x='hour', y='messages', data=df, whis=1, showfliers=False, whiskerprops={"zorder": 10},
-                    boxprops={"zorder": 10},
-                    ax=subplot, zorder=10)
+        plot_common_kwargs = dict(x='hour', y='messages', hue='hour', data=df, ax=subplot, legend=False,
+                                  palette='flare')
+        sns.stripplot(jitter=.4, size=2, alpha=.5, zorder=1, **plot_common_kwargs)
+        sns.boxplot(whis=1, showfliers=False, whiskerprops={"zorder": 10}, boxprops={"zorder": 10}, zorder=10,
+                    **plot_common_kwargs)
+
         subplot.set_ylim(bottom=0, top=df['messages'].quantile(0.999, interpolation='higher'))
 
         subplot.axvspan(11.5, 23.5, zorder=0, color=(0, 0, 0, 0.05))
@@ -358,10 +366,7 @@ class StatsRunner(object):
 
         sns.despine(fig=fig)
 
-        bio = BytesIO()
-        bio.name = 'plot.png'
-        fig.savefig(bio, bbox_inches='tight')
-        bio.seek(0)
+        bio = output_fig(fig)
 
         return None, bio
 
@@ -382,31 +387,31 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         if user:
             sql_dict['user'] = user[0]
-            query_conditions.append("from_user = %(user)s")
+            query_conditions.append("from_user = :user")
 
         query_where = ""
         if query_conditions:
             query_where = f"WHERE {' AND '.join(query_conditions)}"
 
         query = f"""
-                 SELECT date_trunc('day', date)
-                     as day, count(*) as messages
-                 FROM messages_utc
-                 {query_where}
-                 GROUP BY day
-                 ORDER BY day
+                     SELECT date_trunc('day', date)
+                         as day, count(*) as messages
+                     FROM messages_utc
+                     {query_where}
+                     GROUP BY day
+                     ORDER BY day
                  """
 
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict)
+            df = pd.read_sql_query(text(query), con, params=sql_dict)
 
         if len(df) == 0:
             return "No matching messages", None
@@ -443,10 +448,7 @@ class StatsRunner(object):
 
         sns.despine(fig=fig)
 
-        bio = BytesIO()
-        bio.name = 'plot.png'
-        fig.savefig(bio, bbox_inches='tight')
-        bio.seek(0)
+        bio = output_fig(fig)
 
         return None, bio
 
@@ -466,30 +468,30 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         if user:
             sql_dict['user'] = user[0]
-            query_conditions.append("from_user = %(user)s")
+            query_conditions.append("from_user = :user")
 
         query_where = ""
         if query_conditions:
             query_where = f"WHERE {' AND '.join(query_conditions)}"
 
         query = f"""
-                 SELECT date_trunc('hour', date)
-                     as msg_time, count(*) as messages
-                 FROM messages_utc
-                 {query_where}
-                 GROUP BY msg_time
-                 ORDER BY msg_time
+                     SELECT date_trunc('hour', date)
+                         as msg_time, count(*) as messages
+                     FROM messages_utc
+                     {query_where}
+                     GROUP BY msg_time
+                     ORDER BY msg_time
                  """
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict)
+            df = pd.read_sql_query(text(query), con, params=sql_dict)
 
         if len(df) == 0:
             return "No matching messages", None
@@ -522,10 +524,7 @@ class StatsRunner(object):
         else:
             ax.set_title("Total messages by day and hour")
 
-        bio = BytesIO()
-        bio.name = 'plot.png'
-        fig.savefig(bio, bbox_inches='tight')
-        bio.seek(0)
+        bio = output_fig(fig)
 
         return None, bio
 
@@ -552,15 +551,15 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         if user:
             sql_dict['user'] = user[0]
-            query_conditions.append("from_user = %(user)s")
+            query_conditions.append("from_user = :user")
 
         query_where = ""
         if query_conditions:
@@ -576,7 +575,7 @@ class StatsRunner(object):
                  """
 
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict)
+            df = pd.read_sql_query(text(query), con, params=sql_dict)
 
         if len(df) == 0:
             return "No matching messages", None
@@ -612,10 +611,7 @@ class StatsRunner(object):
         sns.despine(fig=fig)
         fig.tight_layout()
 
-        bio = BytesIO()
-        bio.name = 'plot.png'
-        fig.savefig(bio)
-        bio.seek(0)
+        bio = output_fig(fig)
 
         return None, bio
 
@@ -632,11 +628,11 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         query_where = ""
         if query_conditions:
@@ -650,7 +646,7 @@ class StatsRunner(object):
                  """
 
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict)
+            df = pd.read_sql_query(text(query), con, params=sql_dict)
 
         df['idx'] = np.arange(len(df))
         df['diff'] = -df['date'].diff(-1)
@@ -674,7 +670,7 @@ class StatsRunner(object):
             df = df.reset_index(drop=True)
             df['idx'] = df.index
 
-            ax.barh(df.idx, df['diff'].dt.days + df['diff'].dt.seconds/86400, tick_label=df.new_chat_title)
+            ax.barh(df.idx, df['diff'].dt.days + df['diff'].dt.seconds / 86400, tick_label=df.new_chat_title)
 
             ax.margins(0.2)
             ax.set_ylabel("")
@@ -710,10 +706,7 @@ class StatsRunner(object):
             ax.tick_params(axis='y', which='both', labelleft=False, left=False)
             sns.despine(fig=fig, left=True)
 
-        bio = BytesIO()
-        bio.name = 'plot.png'
-        fig.savefig(bio, dpi=200)
-        bio.seek(0)
+        bio = output_fig(fig)
 
         return None, bio
 
@@ -727,36 +720,36 @@ class StatsRunner(object):
         count_query = """
                          SELECT COUNT(*)
                          FROM "messages_utc"
-                         WHERE from_user = %(user)s;
+                         WHERE from_user = :user;
                       """
 
         days_query = """
                         SELECT EXTRACT(epoch FROM(NOW() - MIN(date))) / 86400 as "days"
                         FROM "messages_utc"
-                        WHERE from_user = %(user)s;
+                        WHERE from_user = :user;
                      """
 
         event_query = """
                          SELECT date, event
                          FROM user_events
-                         WHERE user_id = %(user)s
+                         WHERE user_id = :user
                          ORDER BY "date";
                       """
 
         username_query = """
                              SELECT COUNT(*)
                              FROM "user_names"
-                             WHERE user_id = %(user)s;
+                             WHERE user_id = :user;
                          """
 
         with self.engine.connect() as con:
-            result = con.execute(count_query, sql_dict)
+            result = con.execute(text(count_query), sql_dict)
             msg_count: int = result.fetchall()[0][0]
-            result = con.execute(days_query, sql_dict)
+            result = con.execute(text(days_query), sql_dict)
             days: float = result.fetchall()[0][0]
-            result = con.execute(event_query, sql_dict)
+            result = con.execute(text(event_query), sql_dict)
             events: list = result.fetchall()
-            result = con.execute(username_query, sql_dict)
+            result = con.execute(text(username_query), sql_dict)
             name_count: int = result.fetchall()[0][0]
 
         event_text = '\n'.join([f'{event.event} on {pd.to_datetime(event.date).tz_convert(self.tz)}'
@@ -766,13 +759,13 @@ class StatsRunner(object):
         if event_text:
             event_text = '\n' + event_text
 
-        text = f"Messages sent: {msg_count}\n" \
-               f"Average messages per day: {msg_count/days:.2f}\n" \
-               f"First message was {days:.2f} days ago.\n" \
-               f"Usernames on record: {name_count}\n" \
-               f"Average username lifetime: {days/name_count:.2f} days\n" + event_text
+        out_text = f"Messages sent: {msg_count}\n" \
+                   f"Average messages per day: {msg_count / days:.2f}\n" \
+                   f"First message was {days:.2f} days ago.\n" \
+                   f"Usernames on record: {name_count}\n" \
+                   f"Average username lifetime: {days / name_count:.2f} days\n" + event_text
 
-        return f"User {user[1].lstrip('@')}: ```\n{text}\n```", None
+        return f"User {user[1].lstrip('@')}: ```\n{out_text}\n```", None
 
     def get_user_correlation(self, start: str = None, end: str = None, agg: bool = True, c_type: str = None,
                              n: int = 5, thresh: float = 0.05, autouser=None, **kwargs) -> Tuple[str, None]:
@@ -791,11 +784,11 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         query_where = ""
         if query_conditions:
@@ -828,7 +821,7 @@ class StatsRunner(object):
                 """
 
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict)
+            df = pd.read_sql_query(text(query), con, params=sql_dict)
         df['msg_time'] = pd.to_datetime(df.msg_time)
         df['msg_time'] = df.msg_time.dt.tz_convert(self.tz)
 
@@ -871,11 +864,11 @@ class StatsRunner(object):
         if n > len(me) // 2:
             n = int(len(me) // 2)
 
-        text = me.to_string(header=False, float_format=lambda x: f"{x:.3f}")
-        split = text.splitlines()
-        text = "\n".join(['HIGHEST CORRELATION:'] + split[:n] + ['\nLOWEST CORRELATION:'] + split[-n:])
+        out_text = me.to_string(header=False, float_format=lambda x: f"{x:.3f}")
+        split = out_text.splitlines()
+        out_text = "\n".join(['HIGHEST CORRELATION:'] + split[:n] + ['\nLOWEST CORRELATION:'] + split[-n:])
 
-        return f"**User Correlations for {escape_markdown(user[1])}**\n```\n{text}\n```", None
+        return f"**User Correlations for {escape_markdown(user[1])}**\n```\n{out_text}\n```", None
 
     def get_message_deltas(self, lquery: str = None, start: str = None, end: str = None, n: int = 10, thresh: int = 500,
                            autouser=None, **kwargs) -> Tuple[Union[str, None], Union[None, BytesIO]]:
@@ -896,11 +889,11 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         query_where = ""
         if query_conditions:
@@ -924,7 +917,7 @@ class StatsRunner(object):
                                                dense_rank() over (partition by from_user order by date)
                                                   ) as grp
                                        from messages_utc
-                                       where from_user in (%(me)s, %(other)s) {where}
+                                       where from_user in (:me, :other) {where}
                                        order by date
                                       ) t
                                  group by from_user, grp
@@ -937,7 +930,7 @@ class StatsRunner(object):
             sql_dict['other'] = other
 
             with self.engine.connect() as con:
-                result = con.execute(query, sql_dict)
+                result = con.execute(text(query), sql_dict)
             output: Tuple[timedelta, int] = result.fetchall()[0]
 
             return output
@@ -954,9 +947,9 @@ class StatsRunner(object):
         if len(me) < 1:
             return "\n```\nSorry, not enough data, try a bigger date range or decrease -thresh.\n```", None
 
-        text = me.iloc[:n].to_string(header=False, index=True)
+        out_text = me.iloc[:n].to_string(header=False, index=True)
 
-        return f"**Median message delays for {escape_markdown(user[1])} and:**\n```\n{text}\n```", None
+        return f"**Median message delays for {escape_markdown(user[1])} and:**\n```\n{out_text}\n```", None
 
     def get_type_stats(self, start: str = None, end: str = None, autouser=None, **kwargs) -> Tuple[str, None]:
         """
@@ -970,11 +963,11 @@ class StatsRunner(object):
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         query_where = ""
         if query_conditions:
@@ -991,13 +984,13 @@ class StatsRunner(object):
                  """
 
         with self.engine.connect() as con:
-            df = pd.read_sql_query(query, con, params=sql_dict)
+            df = pd.read_sql_query(text(query), con, params=sql_dict)
         df['Group Percent'] = df['count'] / df['count'].sum() * 100
         df.columns = ['type', 'Group Count', 'Group Percent']
 
         if user:
             sql_dict['user'] = user[0]
-            query_conditions.append("from_user = %(user)s")
+            query_conditions.append("from_user = :user")
 
             query = f"""
                         SELECT type, count(*) as user_count
@@ -1009,25 +1002,26 @@ class StatsRunner(object):
                         ORDER BY user_count DESC;
                      """
             with self.engine.connect() as con:
-                df_u = pd.read_sql_query(query, con, params=sql_dict)
+                df_u = pd.read_sql_query(text(query), con, params=sql_dict)
             df_u['User Percent'] = df_u['user_count'] / df_u['user_count'].sum() * 100
             df_u.columns = ['type', 'User Count', 'User Percent']
 
             df = df.merge(df_u, on="type", how="outer")
 
         a = list(zip(df.columns.values, ["Total"] + df.iloc[:, 1:].sum().to_list()))
-        df = df.append({key: value for key, value in a}, ignore_index=True)
+        df = pd.concat((df, pd.DataFrame({key: [value] for key, value in a})), ignore_index=True)
+
         df['Group Count'] = df['Group Count'].astype('Int64')
         try:
             df['User Count'] = df['User Count'].astype('Int64')
         except KeyError:
             pass
-        text = df.to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
+        out_text = df.to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
         if user:
-            return f"**Messages by type, {escape_markdown(user[1])} vs group:**\n```\n{text}\n```", None
+            return f"**Messages by type, {escape_markdown(user[1])} vs group:**\n```\n{out_text}\n```", None
         else:
-            return f"**Messages by type:**\n```\n{text}\n```", None
+            return f"**Messages by type:**\n```\n{out_text}\n```", None
 
     def get_word_stats(self, n: int = 4, limit: int = 20, start: str = None, end: str = None,
                        user: Tuple[int, str] = None, **kwargs) -> Tuple[str, None]:
@@ -1050,31 +1044,31 @@ class StatsRunner(object):
 
         q = q.scalar_subquery()
         f = TsStat(q)
-        stmt = select([f.c['word'], f.c['ndoc'], f.c['nentry']]) \
+        stmt = select(f.columns['word'], f.columns['ndoc'], f.columns['nentry']) \
             .select_from(f)
 
         if n:
-            stmt = stmt.where(func.length(f.c['word']) >= n)
+            stmt = stmt.where(func.length(f.columns['word']) >= n)
 
-        stmt = stmt.order_by(f.c.nentry.desc(),
-                             f.c.ndoc.desc(),
-                             f.c.word)
+        stmt = stmt.order_by(f.columns['nentry'].desc(),
+                             f.columns['ndoc'].desc(),
+                             f.columns['word'])
 
         if limit:
-            stmt = stmt.limit(limit)\
-                       .compile(dialect=postgresql.dialect())
+            stmt = stmt.limit(limit) \
+                .compile(dialect=postgresql.dialect())
 
         with self.engine.connect() as con:
             df = pd.read_sql_query(stmt, con)
 
         df.columns = ['Lexeme', 'Messages', 'Uses']
 
-        text = df.to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
+        out_text = df.to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
         if user:
-            return f"**Most frequently used lexemes, {escape_markdown(user[1].lstrip('@'))}\n```\n{text}\n```", None
+            return f"**Most frequently used lexemes, {escape_markdown(user[1].lstrip('@'))}\n```\n{out_text}\n```", None
         else:
-            return f"**Most frequently used lexemes, all users:**\n```\n{text}\n```", None
+            return f"**Most frequently used lexemes, all users:**\n```\n{out_text}\n```", None
 
     def get_random_message(self, lquery: str = None, start: str = None, end: str = None,
                            user: Tuple[int, str] = None, **kwargs) -> Tuple[str, None]:
@@ -1092,41 +1086,41 @@ class StatsRunner(object):
 
         if user:
             sql_dict['user'] = user[0]
-            query_conditions.append("from_user = %(user)s")
+            query_conditions.append("from_user = :user")
 
         if start:
             sql_dict['start_dt'] = pd.to_datetime(start)
-            query_conditions.append("date >= %(start_dt)s")
+            query_conditions.append("date >= :start_dt")
 
         if end:
             sql_dict['end_dt'] = pd.to_datetime(end)
-            query_conditions.append("date < %(end_dt)s")
+            query_conditions.append("date < :end_dt")
 
         query_where = ""
         if query_conditions:
             query_where = f"AND {' AND '.join(query_conditions)}"
 
         query = f"""
-                SELECT date, from_user, text
-                FROM messages_utc
-                WHERE type = 'text'
-                {query_where}
-                ORDER BY RANDOM()
-                LIMIT 1;
+                    SELECT date, from_user, text
+                    FROM messages_utc
+                    WHERE type = 'text'
+                    {query_where}
+                    ORDER BY RANDOM()
+                    LIMIT 1;
                 """
 
         with self.engine.connect() as con:
-            result = con.execute(query, sql_dict)
+            result = con.execute(text(query), sql_dict)
         try:
-            date, from_user, text = result.fetchall()[0]
+            date, from_user, out_text = result.fetchall()[0]
         except IndexError:
             return "No matching messages", None
 
         return f"*On {escape_markdown(date.strftime('%Y-%m-%d'))}, " \
                f"{escape_markdown(self.users[from_user][0]).lstrip('@')}" \
                f" gave these words of wisdom:*\n" \
-               f"{escape_markdown(text)}\n", \
-               None
+               f"{escape_markdown(out_text)}\n", \
+            None
 
 
 def get_parser(runner: StatsRunner) -> InternalParser:

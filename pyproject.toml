@@ -9,17 +9,17 @@ readme = "README.rst"
 include = ["examples/*", "CHANGELOG.rst"]
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
+python = ">=3.9,<3.12"
 python-telegram-bot = {version = "^20.6", extras = ["job-queue"]}
-sqlalchemy = {version = "^1.4", extras = ["postgresql_psycopg2binary"]}
-SQLAlchemy-Utils = "0.37.6"
-pandas = "^1.0.4"
-seaborn = "^0.12"
-numpy = "^1.22.0"
-matplotlib = "^3.2.1"
+SQLAlchemy = "^2.0.23"
+SQLAlchemy-Utils = "^0.41"
+pandas = "^2.1"
+seaborn = "^0.13"
+numpy = "^1.26.1"
+matplotlib = "^3.8"
 appdirs = "^1.4.4"
-single-source = "^0.2.0"
-typer = "^0.7.0"
+single-source = "^0.3.0"
+typer = "^0.9.0"
 psycopg2-binary = "^2.9.5"
 
 [tool.poetry.dev-dependencies]
