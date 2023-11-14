@@ -17,6 +17,7 @@ Changed
 - Updated to pandas 2.1
 - Updated other dependencies
 - Separate SQL code from db_init function
+- Update to psycopg 3.0
 
 Fixed
 -----

@@ -107,12 +107,12 @@ class PostgresStore(object):
         data['date'] = str(data['date'])
         if name == 'messages':
             update_statement = messages.update()\
-                                       .where(messages.c.message_id == data['message_id'])
+                                       .where(messages.c['message_id'] == data['message_id'])
             with self.engine.connect() as con:
                 _ = con.execute(update_statement, data)
         elif name == 'user_events':
             update_statement = user_events.update()\
-                                          .where(user_events.c.message_id == data['message_id'])
+                                          .where(user_events.c['message_id'] == data['message_id'])
             with self.engine.connect() as con:
                 _ = con.execute(update_statement, data)
         else:

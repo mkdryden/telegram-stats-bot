@@ -20,7 +20,8 @@ matplotlib = "^3.8"
 appdirs = "^1.4.4"
 single-source = "^0.3.0"
 typer = "^0.9.0"
-psycopg2-binary = "^2.9.5"
+psycopg = {version = "^3.1.12", extras = ["binary"]}
+pytest = "^7.4.3"
 
 [tool.poetry.dev-dependencies]
 

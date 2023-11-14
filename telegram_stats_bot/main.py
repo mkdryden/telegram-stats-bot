@@ -216,6 +216,11 @@ if __name__ == '__main__':
         bak_store = JSONStore(path)
     else:
         bak_store = None
+
+    # Use psycopg 3
+    if args.postgres_url.startswith('postgresql://'):
+        args.postgres_url = args.postgres_url.replace('postgresql://', 'postgresql+psycopg://', 1)
+
     store = PostgresStore(args.postgres_url)
     stats = StatsRunner(store.engine, tz=args.tz)
 
