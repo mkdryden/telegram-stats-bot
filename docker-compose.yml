@@ -17,7 +17,7 @@ services:
       POSTGRES_HOST: db
       POSTGRES_DB: telegram_bot
   db:
-    image: postgres:12
+    image: postgres:16
     restart: always
     volumes:
       - db-data:/var/lib/postgresql/data

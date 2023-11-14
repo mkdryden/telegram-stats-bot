@@ -23,6 +23,8 @@ Changed
 - Separate SQL code from db_init function
 - Update to psycopg 3.0
 - Add more protection against bad stats options
+- Upgrade docker image to python 3.11
+- Update docker-compose file to use postgres 16
 
 Fixed
 -----
