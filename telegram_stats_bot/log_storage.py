@@ -26,8 +26,7 @@ import json
 import os
 
 from sqlalchemy import MetaData, Table, Column, create_engine, BigInteger, TIMESTAMP, Text
-from sqlalchemy_utils import database_exists
-from sqlalchemy_utils.functions.orm import quote
+from sqlalchemy_utils import database_exists, create_database
 
 from .parse import MessageDict
 from .db import init_dbs
@@ -79,20 +78,7 @@ class PostgresStore(object):
     def __init__(self, connection_url: str):
         self.engine = create_engine(connection_url, echo=False, isolation_level="AUTOCOMMIT")
         if not database_exists(self.engine.url):
-            text = f"""
-                    CREATE DATABASE {quote(self.engine, self.engine.url.database)}
-                    ENCODING 'utf-8'
-                    TEMPLATE {quote(self.engine, 'template1')}
-                    """
-
-            url = self.engine.url.set(database='postgres')
-
-            engine = create_engine(url, echo=False, isolation_level="AUTOCOMMIT")
-            result_proxy = engine.execute(text)
-
-            if result_proxy is not None:
-                result_proxy.close()
-            engine.dispose()
+            create_database(connection_url, template='template1')
 
         with self.engine.connect() as con:
             init_dbs(con)
