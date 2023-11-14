@@ -24,6 +24,7 @@ services:
     environment:
       POSTGRES_PASSWORD: password
       POSTGRES_DB: telegram_bot
+      POSTGRES_HOST_AUTH_METHOD: md5  # psycopg seems to have issues with scram-sha-256
 
 volumes:
   db-data:
