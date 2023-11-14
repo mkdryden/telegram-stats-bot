@@ -144,6 +144,13 @@ Or you can install an entire venv for development using `poetry <https://python-
     $ cd telegram-stats-bot
     $ poetry install
 
+If you want to be able to run the unit tests, you must install the test dependencies as well,
+and postgresql must be available in your PATH:
+
+.. code:: shell
+
+    $ poetry install --with test
+
 ------
 Docker
 ------

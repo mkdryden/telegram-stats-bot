@@ -9,6 +9,10 @@ and this project adheres to `Semantic Versioning <https://semver.org/spec/v2.0.0
 ----------
 Unreleased
 ----------
+Added
+-----
+- Added a suite of tests for db and stats functions
+
 Changed
 -------
 - Upgraded python-telegram-bot to version 20

@@ -54,6 +54,11 @@ user_events = Table('user_events', metadata,
                     Column('user_id', BigInteger),
                     Column('date', TIMESTAMP),
                     Column('event', Text))
+user_names = Table('user_names', metadata,
+                   Column('user_id', BigInteger),
+                   Column('date', TIMESTAMP),
+                   Column('username', Text),
+                   Column('display_name', Text))
 
 
 def date_converter(o):

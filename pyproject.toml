@@ -23,6 +23,14 @@ typer = "^0.9.0"
 psycopg = {version = "^3.1.12", extras = ["binary"]}
 pytest = "^7.4.3"
 
+[tool.poetry.group.test]
+optional = true
+
+[tool.poetry.group.test.dependencies]
+pytest = "^7.4.3"
+pytest-postgresql = "^5.0.0"
+random-word = "^1.0.11"
+
 [tool.poetry.dev-dependencies]
 
 [build-system]
