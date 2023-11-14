@@ -665,7 +665,7 @@ class StatsRunner(object):
         df.loc[:, 'end'] = df_end
         df.loc[:, 'diff'].iloc[-1] = df.iloc[-1]['end'] - df.iloc[-1]['date']
 
-        fig = Figure(constrained_layout=True, figsize=(12, 0.15 * len(df)))
+        fig = Figure(constrained_layout=True, figsize=(12, 1+0.15 * len(df)))
         ax = fig.subplots()
 
         if duration:

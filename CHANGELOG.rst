@@ -32,6 +32,7 @@ Fixed
 - Date selection for word statistics was broken
 - Incorrect datatype for column in user_events table
 - Modify docker-compose file to set up host authentication with md5
+- Increase minimum title plot height
 
 ----------
 `0.7.0`_ - 2023-01-14
