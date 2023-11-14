@@ -74,10 +74,13 @@ def init_dbs(engine: Engine):
         create table if not exists user_events
         (
             message_id bigint,
-            user_id    text,
+            user_id    bigint,
             date       timestamptz,
             event      text
         );
+        
+        -- Migrate wrong column type
+        alter table user_events alter column user_id type bigint using user_id::bigint;
         
         create index if not exists ix_user_events_message_id
             on user_events (message_id);
