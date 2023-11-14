@@ -105,7 +105,7 @@ class StatsRunner(object):
         """Returns list of unique user ids from messages in database."""
         with self.engine.connect() as con:
             result = con.execute(text("SELECT DISTINCT from_user FROM messages_utc;"))
-        return [user for user, in result.fetchall()]
+        return [user for user, in result.fetchall() if user is not None]
 
     def get_db_users(self) -> Dict[int, Tuple[str, str]]:
         """Returns dictionary mapping user ids to usernames and full names."""
@@ -648,6 +648,9 @@ class StatsRunner(object):
         with self.engine.connect() as con:
             df = pd.read_sql_query(text(query), con, params=sql_dict)
 
+        if len(df) == 0:
+            return "No chat titles in range", None
+
         df['idx'] = np.arange(len(df))
         df['diff'] = -df['date'].diff(-1)
         df['end'] = df['date'] + df['diff']
@@ -759,11 +762,15 @@ class StatsRunner(object):
         if event_text:
             event_text = '\n' + event_text
 
-        out_text = f"Messages sent: {msg_count}\n" \
-                   f"Average messages per day: {msg_count / days:.2f}\n" \
-                   f"First message was {days:.2f} days ago.\n" \
-                   f"Usernames on record: {name_count}\n" \
-                   f"Average username lifetime: {days / name_count:.2f} days\n" + event_text
+        try:
+            out_text = f"Messages sent: {msg_count}\n" \
+                       f"Average messages per day: {msg_count / days:.2f}\n" \
+                       f"First message was {days:.2f} days ago.\n" \
+                       f"Usernames on record: {name_count}\n" \
+                       f"Average username lifetime: {days / name_count:.2f} days\n" + event_text
+        except TypeError:
+            return 'No data for user', None
+
 
         return f"User {user[1].lstrip('@')}: ```\n{out_text}\n```", None
 
@@ -822,6 +829,10 @@ class StatsRunner(object):
 
         with self.engine.connect() as con:
             df = pd.read_sql_query(text(query), con, params=sql_dict)
+
+        if len(df) == 0:
+            return 'No messages in range', None
+
         df['msg_time'] = pd.to_datetime(df.msg_time)
         df['msg_time'] = df.msg_time.dt.tz_convert(self.tz)
 
@@ -985,6 +996,10 @@ class StatsRunner(object):
 
         with self.engine.connect() as con:
             df = pd.read_sql_query(text(query), con, params=sql_dict)
+
+        if len(df) == 0:
+            return 'No messages in range', None
+
         df['Group Percent'] = df['count'] / df['count'].sum() * 100
         df.columns = ['type', 'Group Count', 'Group Percent']
 
@@ -1016,6 +1031,7 @@ class StatsRunner(object):
             df['User Count'] = df['User Count'].astype('Int64')
         except KeyError:
             pass
+
         out_text = df.to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
         if user:
@@ -1060,6 +1076,9 @@ class StatsRunner(object):
 
         with self.engine.connect() as con:
             df = pd.read_sql_query(stmt, con)
+
+        if len(df) == 0:
+            return 'No messages in range', None
 
         df.columns = ['Lexeme', 'Messages', 'Uses']
 
