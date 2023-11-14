@@ -22,6 +22,9 @@ telegram-stats-bot
 Telegram-stats-bot is a simple bot that lives in your Telegram group, logging messages to a Postgresql database and
 serving statistical tables and plots to users as Telegram messages.
 
+*Note: Version 0.8.0 adds a number of behind the scenes improvements and dependency bumps in preparation for a version
+1.0 release. Stay tuned for a new interface using the inline keyboard bot functionality!*
+
 .. image:: examples/chat_example.png
     :alt: Bot conversation example
 
