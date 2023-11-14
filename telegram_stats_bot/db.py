@@ -22,7 +22,7 @@
 import logging
 
 from sqlalchemy import Column, Table, MetaData, text
-from sqlalchemy.engine import Engine
+from sqlalchemy.engine import Connection
 from sqlalchemy.dialects import postgresql
 from sqlalchemy.types import TIMESTAMP, BigInteger
 
@@ -35,9 +35,7 @@ messages = Table('messages_utc', metadata,
                  Column('from_user', BigInteger),
                  Column('text_index_col', postgresql.TSVECTOR))
 
-
-def init_dbs(engine: Engine):
-    sql = """
+db_sql = sql = """
         create table if not exists messages_utc
         (
             message_id              bigint,
@@ -98,5 +96,6 @@ def init_dbs(engine: Engine):
         
         """
 
-    with engine.connect() as con:
-        con.execute(text(sql))
+
+def init_dbs(con: Connection):
+    con.execute(text(db_sql))

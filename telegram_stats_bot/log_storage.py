@@ -89,7 +89,8 @@ class PostgresStore(object):
                 result_proxy.close()
             engine.dispose()
 
-        init_dbs(self.engine)
+        with self.engine.connect() as con:
+            init_dbs(con)
 
     def append_data(self, name: str, data: MessageDict):
         data['date'] = str(data['date'])
