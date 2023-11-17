@@ -134,19 +134,19 @@ class StatsRunner(object):
         for uid in user_dict:
             username, display_name = user_dict[uid]
             sql_dict = {'uid': uid, 'username': username, 'display_name': display_name}
-            query = """
+            update_query = """
                 UPDATE user_names
                 SET username = :username
                 WHERE user_id = :uid AND username IS DISTINCT FROM :username;
             """
-            if display_name:
-                query += """\n
-                         INSERT INTO user_names(user_id, date, username, display_name)
-                             VALUES (:uid, current_timestamp, :username, :display_name);
-                         """
-
+            insert_query = """
+                INSERT INTO user_names(user_id, date, username, display_name)
+                VALUES (:uid, current_timestamp, :username, :display_name);
+            """
             with self.engine.connect() as con:
-                con.execute(text(query), sql_dict)
+                con.execute(text(update_query), sql_dict)
+                if display_name:
+                    con.execute(text(insert_query), sql_dict)
 
     def get_chat_counts(self, n: int = 20, lquery: str = None, mtype: str = None, start: str = None, end: str = None) \
             -> Tuple[Union[str, None], Union[None, BytesIO]]:
