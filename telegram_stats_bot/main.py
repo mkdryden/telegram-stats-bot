@@ -77,7 +77,8 @@ async def log_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if len(user) > 0:
         for i in user:
             if i:
-                bak_store.append_data('user_events', i)
+                if bak_store:
+                    bak_store.append_data('user_events', i)
                 store.append_data('user_events', i)
 
 
