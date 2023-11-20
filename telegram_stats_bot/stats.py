@@ -208,8 +208,10 @@ class StatsRunner(object):
         elif lquery:
             df.columns = ['User', 'lquery', 'Percent']
         else:
-            df.columns = ['User', 'Total Messages', 'Percent']
+            df.columns = ['User', 'Messages', '%']
         df['User'] = df['User'].str.replace(r'[^\x00-\x7F]|[@]', "", regex=True)  # Drop emoji and @
+        df['User'] = df['User'].astype(str) # convert to string if necessary
+        df['User'] = df['User'].apply(lambda x: x[:15] + "..." if len(x) > 15 else x) # truncate and append "..."
 
         out_text = df.iloc[:n].to_string(index=False, header=True, float_format=lambda x: f"{x:.1f}")
 
